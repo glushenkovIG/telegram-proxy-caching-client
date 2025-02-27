@@ -1,0 +1,40 @@
+
+Please solve this to start chatting 62-48
+Time: 2025-02-27 13:52:39+00:00
+==================================================
+
+Received message from chat: Эльзас | Базель | БаВю
+Other messages: 1 msgs [00:54, 54.21s/ msgs]Error handling message: database is locked
+Error handling message: database is locked
+Error handling message: database is locked
+Error handling message: database is locked
+Error handling message: database is locked
+
+Received message from chat: MIPT Germany
+Other messages: 2 msgs [04:02, 133.09s/ msgs]Cannot get difference for channel 1181053136 since the account is likely misusing the session: database is locked
+Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-8' coro=<UpdateMethods._keepalive_loop() done, defined at /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/updates.py:481> exception=OperationalError('database is locked')>)
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/helpers.py", line 176, in _cancel
+    await task
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/updates.py", line 517, in _keepalive_loop
+    self._save_states_and_entities()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/telegrambaseclient.py", line 694, in _save_states_and_entities
+    self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/sessions/sqlite.py", line 301, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+Task exception was never retrieved
+future: <Task finished name='Task-398' coro=<TelegramBaseClient._disconnect_coro() done, defined at /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/telegrambaseclient.py:707> exception=OperationalError('database is locked')>
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/telegrambaseclient.py", line 737, in _disconnect_coro
+    self._save_states_and_entities()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/telegrambaseclient.py", line 694, in _save_states_and_entities
+    self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/sessions/sqlite.py", line 301, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-8' coro=<UpdateMethods._keepalive_loop() done, defined at /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/client/updates.py:481> exception=OperationalError('database is locked')>)
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/telethon/helpers.py", line 176, in _cancel
+    await task
+sqlite3.OperationalError: database is locked
