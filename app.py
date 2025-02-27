@@ -1,54 +1,38 @@
 import os
 import logging
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from sqlalchemy.orm import DeclarativeBase
+from flask import Flask, render_template
+from models import db, TelegramMessage
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-class Base(DeclarativeBase):
-    pass
-
-# Initialize extensions
-db = SQLAlchemy(model_class=Base)
-limiter = Limiter(key_func=get_remote_address)
 
 def create_app():
     app = Flask(__name__)
 
     # Configure database
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
-    # Initialize extensions
+    # Initialize database
     db.init_app(app)
-    limiter.init_app(app)
 
-    with app.app_context():
-        # Import routes
-        from routes import bp as main_blueprint
-        app.register_blueprint(main_blueprint)
-
-        # Import models for table creation
-        from models import TelegramMessage
-
-        # Create tables
-        db.create_all()
-        logger.info("Database tables created successfully")
+    @app.route('/')
+    def index():
+        try:
+            messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).all()
+            logger.info(f"Retrieved {len(messages)} messages from database")
+            return render_template('index.html', messages=messages)
+        except Exception as e:
+            logger.error(f"Error fetching messages: {e}")
+            return f"Error loading messages: {str(e)}", 500
 
     return app
 
-# Create the app instance
-app = create_app()
-
 if __name__ == "__main__":
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        logger.info("Database tables created successfully")
     app.run(host="0.0.0.0", port=5000, debug=True)
