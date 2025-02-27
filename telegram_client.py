@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from telethon import TelegramClient, events
 from telethon.tl.types import Channel, Folder
@@ -5,7 +6,8 @@ from app import db
 from models import TelegramMessage
 from config import Config
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class TelegramCollector:
@@ -36,11 +38,11 @@ class TelegramCollector:
     async def start(self):
         try:
             logger.info("Starting Telegram collector...")
-            await self.client.start()  # Start without bot token first
+            # This will automatically prompt for phone number if needed
+            await self.client.start()
 
-            # Set up the client
             if not await self.client.is_user_authorized():
-                logger.error("Client not authorized. Please provide authorization credentials.")
+                logger.error("Client not authorized. Please enter your phone number when prompted.")
                 return False
 
             self.is_connected = True
@@ -94,6 +96,7 @@ class TelegramCollector:
             return False
 
     async def fetch_history(self, channel, limit=100):
+        """Fetch historical messages from a channel."""
         try:
             logger.info(f"Fetching history from {channel.title}")
 

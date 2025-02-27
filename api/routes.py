@@ -1,20 +1,16 @@
+import logging
 from flask import Blueprint, jsonify, request
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from models import TelegramMessage
 from .auth import require_api_key
-from app import app, db
+from app import db
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 api = Blueprint('api', __name__)
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["100 per day"]
-)
 
 @api.route('/messages', methods=['GET'])
 @require_api_key
-@limiter.limit("100 per day")
 def get_messages():
     try:
         page = request.args.get('page', 1, type=int)
@@ -37,12 +33,11 @@ def get_messages():
         })
 
     except Exception as e:
-        app.logger.error(f"Error in get_messages: {str(e)}")
+        logger.error(f"Error in get_messages: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @api.route('/channels', methods=['GET'])
 @require_api_key
-@limiter.limit("100 per day")
 def get_channels():
     try:
         channels = db.session.query(TelegramMessage.channel_title)\
@@ -52,12 +47,11 @@ def get_channels():
             'channels': [channel[0] for channel in channels if channel[0]]
         })
     except Exception as e:
-        app.logger.error(f"Error in get_channels: {str(e)}")
+        logger.error(f"Error in get_channels: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @api.route('/search', methods=['GET'])
 @require_api_key
-@limiter.limit("100 per day")
 def search_messages():
     try:
         query = request.args.get('q')
@@ -74,5 +68,5 @@ def search_messages():
             'messages': [msg.to_dict() for msg in messages]
         })
     except Exception as e:
-        app.logger.error(f"Error in search_messages: {str(e)}")
+        logger.error(f"Error in search_messages: {str(e)}")
         return jsonify({'error': str(e)}), 500

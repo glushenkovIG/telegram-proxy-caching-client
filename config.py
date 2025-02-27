@@ -11,7 +11,6 @@ class Config:
     # Telegram
     TELEGRAM_API_ID = 26162406
     TELEGRAM_API_HASH = '7a005c82feee57d782a7e2f8399ddaf6'
-    TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 
     # Rate Limiting
     RATELIMIT_DEFAULT = "100 per day"

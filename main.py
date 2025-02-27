@@ -5,7 +5,7 @@ from app import create_app
 from telegram_client import TelegramCollector
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def run_flask():
@@ -36,4 +36,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     finally:
-        loop.close()
+        if 'loop' in locals():
+            loop.close()
