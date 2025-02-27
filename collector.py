@@ -10,24 +10,11 @@ logging.basicConfig(level=logging.INFO,
                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize client
-try:
-    api_id = int(Config.TELEGRAM_API_ID)
-    api_hash = Config.TELEGRAM_API_HASH
-    
-    print(f"Using Telegram API ID: {api_id}")
-    # Don't print the full hash for security
-    print(f"Using Telegram API Hash: {api_hash[:4]}...{api_hash[-4:] if len(api_hash) > 8 else ''}")
-    
-    client = TelegramClient('ton_collector_session', 
-                          api_id,
-                          api_hash)
-except ValueError as e:
-    print(f"ERROR: Invalid Telegram API credentials: {str(e)}")
-    print("Please set valid TELEGRAM_API_ID and TELEGRAM_API_HASH environment variables")
-    print("Or update the default values in config.py with your Telegram API credentials")
-    import sys
-    sys.exit(1)
+# Initialize client with existing session
+print("Using existing Telegram session file...")
+# Set dummy values for API credentials for session loading
+client = TelegramClient('ton_collector_session', 1, 'x')
+# Skip connecting with credentials since we're using existing session
 
 # Track messages
 pbar = tqdm(desc="Messages", unit=" msgs")
@@ -75,10 +62,17 @@ async def handle_message(event):
 async def main():
     """Main collector function"""
     try:
-        print("Starting collector...")
-        await client.start()
-        me = await client.get_me()
-        print(f"Connected as: {me.username}")
+        print("Starting collector with existing session...")
+        # Use existing session - don't prompt for phone code
+        await client.connect()
+        
+        if await client.is_user_authorized():
+            me = await client.get_me()
+            print(f"Connected as: {me.username if me else 'Unknown'}")
+        else:
+            print("ERROR: Existing session is not authorized.")
+            print("Please run telegram_client.py first to create a valid session")
+            return
         print("\nMonitoring channels...")
         
         # Add heartbeat to show collector is active
