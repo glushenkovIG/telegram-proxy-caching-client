@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 from telethon import TelegramClient, events
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
@@ -76,20 +77,33 @@ async def main():
                 logger.error(f"Authentication error: {auth_error}")
                 return
 
-        # Message handler for ALL messages
+        print("\nSuccessfully connected to Telegram!")
+
+        # Get all dialogs
+        dialogs = await client.get_dialogs()
+        ton_channels = [d for d in dialogs if d.name and ("TON" in d.name or "ton" in d.name)]
+
+        print("\nMonitoring the following TON channels:")
+        for channel in ton_channels:
+            print(f"- {channel.name}")
+
         @client.on(events.NewMessage)
         async def message_handler(event):
             try:
-                # Get message details
-                sender = await event.get_sender()
                 chat = await event.get_chat()
 
-                # Create database record
+                # Only process messages from TON-related channels
+                if not hasattr(chat, 'title') or not ('TON' in chat.title or 'ton' in chat.title):
+                    return
+
+                sender = await event.get_sender()
+
+                # Save to database
                 with app.app_context():
                     message = TelegramMessage(
                         message_id=event.message.id,
                         channel_id=str(event.chat_id),
-                        channel_title=chat.title if hasattr(chat, 'title') else None,
+                        channel_title=chat.title,
                         sender_id=str(sender.id) if sender else None,
                         sender_username=sender.username if sender else None,
                         content=event.message.text,
@@ -97,17 +111,15 @@ async def main():
                     )
                     db.session.add(message)
                     db.session.commit()
-                    logger.info(f"Saved message {message.message_id} to database")
 
                 # Print to console
-                print("\nNew message received and saved to database:")
-                if hasattr(chat, 'title'):
-                    print(f"Channel/Group: {chat.title}")
-                else:
-                    print(f"From: {sender.username or sender.first_name}")
-                print(f"Content: {event.message.text}")
+                print("\n" + "="*50)
+                print(f"Channel: {chat.title}")
+                print(f"From: {sender.username or sender.first_name if sender else 'Unknown'}")
+                print("-"*50)
+                print(f"{event.message.text}")
                 print(f"Time: {event.message.date}")
-                print("-" * 50)
+                print("="*50)
 
             except Exception as e:
                 logger.error(f"Error handling message: {e}")
@@ -116,13 +128,14 @@ async def main():
 
         print("\n" + "="*50)
         print("TELEGRAM COLLECTOR RUNNING")
-        print("Monitoring ALL messages (saving to database)")
+        print("Monitoring TON-related channels")
         print("="*50 + "\n")
 
         await client.run_until_disconnected()
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     import asyncio
