@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Project"
+runButton = "Restart Flask"
 
 [[workflows.workflow]]
 name = "Project"
@@ -89,6 +89,18 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python telegram_client.py"
 
+[[workflows.workflow]]
+name = "Restart Flask"
+author = 36288906
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
