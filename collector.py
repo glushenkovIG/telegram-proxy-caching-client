@@ -1,125 +1,66 @@
 import os
 import logging
-import random
 from telethon import TelegramClient, events
 from tqdm import tqdm
 from config import Config
-import asyncio
-from app import app, db
-from models import TelegramMessage
+from app import app, db, TelegramMessage
 
-# Set up basic logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize client
 client = TelegramClient('ton_collector_session', 
                        Config.TELEGRAM_API_ID,
-                       Config.TELEGRAM_API_HASH,
-                       connection_retries=5)
+                       Config.TELEGRAM_API_HASH)
 
-# Track other messages
-other_messages = 0
-pbar = tqdm(desc="Other messages", unit=" msgs")
-
-# Exact list of TON channels from screenshot
-TON_CHANNELS = set([
-    'TON Dev News',
-    'Hackers League Hackathon', 
-    'TON Society Chat',
-    'TON Tact Language Chat',
-    'Telegram Developers Community',
-    'TON Data Hub Chat',
-    'TON Data Hub',
-    'TON Community',
-    'TON Dev Chat (中文)',
-    'TON Research',
-    'TON Jobs',
-    'TON Contests',
-    'TON Status',
-    'BotNews',
-    'Testnet TON Status',
-    'The Open Network'
-])
+# Track messages
+pbar = tqdm(desc="Messages", unit=" msgs")
 
 @client.on(events.NewMessage)
 async def handle_message(event):
-    """Handle new messages"""
+    """Handle and store new messages"""
     try:
-        global other_messages
         chat = await event.get_chat()
         chat_title = getattr(chat, 'title', None)
-        chat_username = getattr(chat, 'username', None)
-        chat_link = f"https://t.me/{chat_username}" if chat_username else "Private Channel"
 
-        print(f"\nReceived message from chat: {chat_title}")  # Debug line
-
-        # Save all messages to database
-        sender = await event.get_sender()
+        # Store message in database
         with app.app_context():
             message = TelegramMessage(
                 message_id=event.message.id,
                 channel_id=str(chat.id),
                 channel_title=chat_title,
-                channel_username=chat_username,
-                sender_id=str(sender.id) if sender else None,
-                sender_username=sender.username or sender.first_name if sender else 'Unknown',
                 content=event.message.text,
                 timestamp=event.message.date,
-                is_ton_dev=bool(chat_title and chat_title.strip() in TON_CHANNELS)
+                is_ton_dev=chat_title in Config.TON_CHANNELS
             )
             db.session.add(message)
             db.session.commit()
 
-        # Only show messages from exact channel matches in console
-        if chat_title and chat_title.strip() in TON_CHANNELS:
-            print("\n==================================================")
-            print(f"Channel: {chat_title}")
-            print(f"Channel ID: {chat.id}")
-            print(f"Channel Link: {chat_link}")
-            print(f"From: {sender.username or sender.first_name if sender else 'Unknown'}")
-            print("--------------------------------------------------")
-            print(f"Message: {event.message.text}")
-            print(f"Time: {event.message.date}")
-            print("==================================================")
+        # Show TON dev messages in console
+        if chat_title in Config.TON_CHANNELS:
+            print(f"\nTON Message from {chat_title}:")
+            print(f"Content: {event.message.text}")
         else:
-            # Count other messages
-            other_messages += 1
             pbar.update(1)
 
     except Exception as e:
-        print(f"Error handling message: {str(e)}")
+        logger.error(f"Error: {str(e)}")
 
 async def main():
+    """Main collector function"""
     try:
-        print("Connecting to Telegram...")
-        await client.connect()
+        print("Starting collector...")
+        await client.start()
         me = await client.get_me()
-        print(f"\nConnected as: {me.username}")
-        print("\nMonitoring these channels:")
-        for channel in sorted(TON_CHANNELS):
-            print(f"- {channel}")
-        print("\nWaiting for messages...")
-
-        # Keep running until interrupted
-        await client.disconnected
+        print(f"Connected as: {me.username}")
+        print("\nMonitoring channels...")
+        await client.run_until_disconnected()
     except Exception as e:
-        logger.error(f"Error in main: {e}")
+        logger.error(f"Error: {str(e)}")
     finally:
-        # Ensure proper disconnection
         await client.disconnect()
-        logger.info("Client disconnected")
 
 if __name__ == "__main__":
-    try:
-        # Run with proper exception handling  
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Process interrupted by user")
-    except Exception as e:
-        logger.error(f"Unhandled exception: {e}", exc_info=True)
-    finally:
-        logger.info("Exiting collector")
+    import asyncio
+    asyncio.run(main())

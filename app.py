@@ -1,40 +1,38 @@
 import os
-from flask import Flask
+from datetime import datetime
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
+# Create Flask app
 app = Flask(__name__)
 
-# Configure the SQLAlchemy part of the app instance
+# Configure database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
-app.secret_key = os.environ.get("SESSION_SECRET")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
-# Initialize SQLAlchemy with the application
-db.init_app(app)
+# Initialize database
+db = SQLAlchemy(app)
 
-# Initialize models and tables
-def init_db():
-    with app.app_context():
-        # Import models here to avoid circular imports
-        import models
-        db.create_all()
+# Message model
+class TelegramMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message_id = db.Column(db.Integer, nullable=False)
+    channel_id = db.Column(db.String(100), nullable=False)
+    channel_title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_ton_dev = db.Column(db.Boolean, default=False)
 
-# Import routes after db initialization
-def init_routes():
-    from routes import bp
-    app.register_blueprint(bp)
+# Create tables
+with app.app_context():
+    db.create_all()
 
-# Initialize everything
-init_db()
-init_routes()
+# Simple route to test
+@app.route('/')
+def index():
+    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(10).all()
+    return render_template('index.html', messages=messages)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

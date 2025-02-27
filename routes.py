@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify
-from app import db
-from models import TelegramMessage
+from app import app, db, TelegramMessage
 
 bp = Blueprint('main', __name__)
 
@@ -20,8 +19,8 @@ def index():
     )
 
     return render_template('index.html', 
-                         messages=pagination.items,
-                         pagination=pagination)
+                        messages=pagination.items,
+                        pagination=pagination)
 
 @bp.route('/status')
 def status():
