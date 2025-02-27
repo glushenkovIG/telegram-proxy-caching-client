@@ -56,10 +56,12 @@ class TelegramCollector:
                     # Send code request
                     await self.client.send_code_request(phone_number)
                     print(f"\nA verification code has been sent to {phone_number}")
-                    print("Please enter the code when prompted")
-
-                    # Get the code from user
-                    code = input("Enter the code you received: ")
+                    print("Please check your phone for the Telegram code")
+                    
+                    # Get the code from user (with clear instructions)
+                    print("\n==================================================")
+                    code = input("Enter the verification code you received on your mobile: ")
+                    print("==================================================\n")
 
                     # Sign in with the code
                     await self.client.sign_in(phone_number, code)
