@@ -41,18 +41,14 @@ async def handle_message(event):
 
         # Only show messages from exact channel matches
         if chat_title and chat_title.strip() in TON_CHANNELS:
-            # Print full message details for TON channels
             sender = await event.get_sender()
-            print(f"\n{'-'*20} {chat_title} ({chat.id}) {'-'*20}")
+            print("\n==================================================")
             print(f"Channel: {chat_title}")
-            print(f"Channel ID: {chat.id}")
-            print(f"Channel Username: @{getattr(chat, 'username', 'N/A')}")
-            print(f"Message ID: {event.message.id}")
-            print(f"From: {sender.username or sender.first_name if sender else 'Unknown'} (ID: {sender.id if sender else 'N/A'})")
-            print(f"{'-'*50}")
+            print(f"From: {sender.username or sender.first_name if sender else 'Unknown'}")
+            print("--------------------------------------------------")
             print(f"Message: {event.message.text}")
             print(f"Time: {event.message.date}")
-            print("="*50)
+            print("==================================================")
         else:
             # Count other messages
             other_messages += 1
