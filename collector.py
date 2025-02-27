@@ -11,8 +11,8 @@ client = TelegramClient('ton_collector_session',
 other_messages = 0
 pbar = tqdm(desc="Other messages", unit=" msgs")
 
-# Exact list of TON channels from screenshot -  This set needs to be updated based on the screenshot.  I am leaving it as is because the screenshot is unavailable.
-TON_CHANNELS = {
+# Exact list of TON channels from screenshot
+TON_CHANNELS = set([
     'TON Dev News',
     'Hackers League Hackathon',
     'TON Society Chat',
@@ -29,7 +29,7 @@ TON_CHANNELS = {
     'BotNews',
     'Testnet TON Status',
     'The Open Network'
-}
+])
 
 @client.on(events.NewMessage)
 async def handle_message(event):
@@ -43,13 +43,13 @@ async def handle_message(event):
         if chat_title and chat_title.strip() in TON_CHANNELS:
             # Print full message details for TON channels
             sender = await event.get_sender()
-            print("\n" + "="*50)
+            print(f"\n{'-'*20} {chat_title} ({chat.id}) {'-'*20}")
             print(f"Channel: {chat_title}")
             print(f"Channel ID: {chat.id}")
             print(f"Channel Username: @{getattr(chat, 'username', 'N/A')}")
-            print(f"From: {sender.username or sender.first_name if sender else 'Unknown'}")
-            print(f"Sender ID: {sender.id if sender else 'N/A'}")
-            print("-"*50)
+            print(f"Message ID: {event.message.id}")
+            print(f"From: {sender.username or sender.first_name if sender else 'Unknown'} (ID: {sender.id if sender else 'N/A'})")
+            print(f"{'-'*50}")
             print(f"Message: {event.message.text}")
             print(f"Time: {event.message.date}")
             print("="*50)
