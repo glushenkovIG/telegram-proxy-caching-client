@@ -13,33 +13,45 @@ logger = logging.getLogger(__name__)
 
 class TelegramCollector:
     def __init__(self):
-        self.client = TelegramClient(
-            'ton_collector_session',
-            Config.TELEGRAM_API_ID,
-            Config.TELEGRAM_API_HASH
-        )
+        self.client = TelegramClient('ton_collector_session',
+                                   Config.TELEGRAM_API_ID,
+                                   Config.TELEGRAM_API_HASH)
         self.is_connected = False
 
     async def start(self):
         try:
             logger.info("Starting TelegramCollector...")
-
-            # Connect to Telegram
             await self.client.connect()
 
             if not await self.client.is_user_authorized():
-                logger.info("Client not authorized. Starting authentication process...")
                 try:
-                    # Request verification code
+                    # Clear console and show prominent message
+                    print("\n" + "="*50)
+                    print("TELEGRAM AUTHENTICATION REQUIRED")
+                    print("="*50)
+
+                    # Send code request
                     await self.client.send_code_request(Config.TELEGRAM_PHONE)
                     logger.info(f"Verification code sent to {Config.TELEGRAM_PHONE}")
 
-                    # Get verification code from user
-                    print("\nPlease check your phone for the Telegram verification code")
-                    code = input("Enter the code: ")
+                    print(f"\n>>> A verification code has been sent to {Config.TELEGRAM_PHONE}")
+                    print(">>> Please check your Telegram messages")
+                    code = input(">>> Enter the verification code here: ")
 
-                    # Sign in with the code
-                    await self.client.sign_in(Config.TELEGRAM_PHONE, code)
+                    try:
+                        # Try to sign in with the code
+                        await self.client.sign_in(Config.TELEGRAM_PHONE, code)
+                    except Exception as e:
+                        if "2FA" in str(e) or "password" in str(e).lower():
+                            # Clear 2FA request
+                            print("\n" + "="*50)
+                            print("TWO-FACTOR AUTHENTICATION REQUIRED")
+                            print("="*50)
+                            password = input(">>> Please enter your 2FA password: ")
+                            await self.client.sign_in(password=password)
+                        else:
+                            raise e
+
                     logger.info("Successfully signed in!")
 
                 except Exception as auth_error:
@@ -86,6 +98,13 @@ class TelegramCollector:
 
             self.is_connected = True
             logger.info("TelegramCollector started successfully")
+            print("\n" + "="*50)
+            print("TELEGRAM COLLECTOR RUNNING")
+            print("Messages from Saved Messages will be collected")
+            print("="*50 + "\n")
+
+            # Keep the client running
+            await self.client.run_until_disconnected()
             return True
 
         except Exception as e:
