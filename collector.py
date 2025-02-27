@@ -11,9 +11,23 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 # Initialize client
-client = TelegramClient('ton_collector_session', 
-                       Config.TELEGRAM_API_ID,
-                       Config.TELEGRAM_API_HASH)
+try:
+    api_id = int(Config.TELEGRAM_API_ID)
+    api_hash = Config.TELEGRAM_API_HASH
+    
+    print(f"Using Telegram API ID: {api_id}")
+    # Don't print the full hash for security
+    print(f"Using Telegram API Hash: {api_hash[:4]}...{api_hash[-4:] if len(api_hash) > 8 else ''}")
+    
+    client = TelegramClient('ton_collector_session', 
+                          api_id,
+                          api_hash)
+except ValueError as e:
+    print(f"ERROR: Invalid Telegram API credentials: {str(e)}")
+    print("Please set valid TELEGRAM_API_ID and TELEGRAM_API_HASH environment variables")
+    print("Or update the default values in config.py with your Telegram API credentials")
+    import sys
+    sys.exit(1)
 
 # Track messages
 pbar = tqdm(desc="Messages", unit=" msgs")

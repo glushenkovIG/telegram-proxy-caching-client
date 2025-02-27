@@ -25,6 +25,8 @@ def index():
 @bp.route('/status')
 def status():
     try:
+        from config import Config
+        
         message_count = TelegramMessage.query.count()
         channel_count = db.session.query(TelegramMessage.channel_title)\
                                 .distinct()\
@@ -32,12 +34,17 @@ def status():
         latest_message = TelegramMessage.query\
             .order_by(TelegramMessage.timestamp.desc())\
             .first()
+            
+        # Check if API credentials are set
+        api_id_set = bool(Config.TELEGRAM_API_ID and Config.TELEGRAM_API_ID != '12345')
+        api_hash_set = bool(Config.TELEGRAM_API_HASH and Config.TELEGRAM_API_HASH != 'your-api-hash-here')
 
         return jsonify({
             'status': 'healthy',
             'messages_collected': message_count,
             'channels_monitored': channel_count,
-            'latest_message_time': latest_message.timestamp.isoformat() if latest_message else None
+            'latest_message_time': latest_message.timestamp.isoformat() if latest_message else None,
+            'telegram_api_configured': api_id_set and api_hash_set
         })
     except Exception as e:
         app.logger.error(f"Error checking status: {str(e)}")

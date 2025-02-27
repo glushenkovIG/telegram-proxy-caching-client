@@ -1,9 +1,9 @@
 import os
 
 class Config:
-    # Telegram API credentials
-    TELEGRAM_API_ID = os.environ.get('TELEGRAM_API_ID')
-    TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH')
+    # Telegram API settings with hardcoded test values for development
+    TELEGRAM_API_ID = os.environ.get('TELEGRAM_API_ID') or '12345'  # Replace with your actual API ID
+    TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH') or 'your-api-hash-here'  # Replace with your actual API Hash
     TELEGRAM_PHONE = os.environ.get('TELEGRAM_PHONE')
 
     # Target TON dev channels
