@@ -2,9 +2,9 @@ import os
 
 class Config:
     # Telegram API credentials
-    TELEGRAM_API_ID = os.environ.get('TELEGRAM_API_ID', '26162406')
-    TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH', '7a005c82feee57d782a7e2f8399ddaf6')
-    TELEGRAM_PHONE = os.environ.get('TELEGRAM_PHONE', '+41762636496')
+    TELEGRAM_API_ID = os.environ.get('TELEGRAM_API_ID')
+    TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH')
+    TELEGRAM_PHONE = os.environ.get('TELEGRAM_PHONE')
 
     # Target TON dev channels
     TON_CHANNELS = [
