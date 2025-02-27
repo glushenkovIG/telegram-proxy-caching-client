@@ -45,13 +45,24 @@ class TelegramCollector:
             print("Please enter that code when prompted")
             print("="*50 + "\n")
 
-            # Clear guidance for phone number input
-            print("\nPlease enter your phone number now:")
-            await self.client.start()
-
+            phone_number = "+41762636496"  # Using the provided phone number
+            logger.info(f"Using phone number: {phone_number}")
+            
             if not await self.client.is_user_authorized():
-                logger.error("Client not authorized. Please enter your phone number when prompted")
-                return False
+                # Request verification code
+                await self.client.send_code_request(phone_number)
+                print(f"\nA verification code has been sent to {phone_number}")
+                print("Please enter the code when prompted")
+                
+                try:
+                    # Use the phone number for authentication
+                    await self.client.start(phone=phone_number)
+                except Exception as e:
+                    logger.error(f"Error during authentication: {str(e)}")
+                    return False
+            else:
+                # Already authorized, just connect
+                await self.client.connect()
 
             self.is_connected = True
             logger.info("Successfully connected to Telegram")
