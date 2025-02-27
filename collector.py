@@ -1,11 +1,17 @@
 import os
+import logging
 from telethon import TelegramClient, events
 from tqdm import tqdm
+from config import Config
 
-# Initialize client
+# Setup logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Initialize client with credentials from config
 client = TelegramClient('ton_collector_session', 
-                       os.environ.get('TELEGRAM_API_ID'),
-                       os.environ.get('TELEGRAM_API_HASH'))
+                       Config.TELEGRAM_API_ID,
+                       Config.TELEGRAM_API_HASH)
 
 # Track other messages
 other_messages = 0
@@ -60,17 +66,27 @@ async def handle_message(event):
             pbar.update(1)
 
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error in main: {str(e)}")
 
 async def main():
     print("Connecting to Telegram...")
-    await client.start()
-    print("\nConnected! Monitoring these channels:")
-    for channel in sorted(TON_CHANNELS):
-        print(f"- {channel}")
-    print("\nAll other messages will be counted in the progress bar")
-    print("Press Ctrl+C to stop")
-    await client.run_until_disconnected()
+    try:
+        # Try to connect with stored session first
+        await client.start()
+
+        # If no session, try to connect with phone
+        if not await client.is_user_authorized():
+            await client.start(phone=Config.TELEGRAM_PHONE)
+
+        print("\nConnected! Monitoring these channels:")
+        for channel in sorted(TON_CHANNELS):
+            print(f"- {channel}")
+        print("\nAll other messages will be counted in the progress bar")
+        print("Press Ctrl+C to stop")
+        await client.run_until_disconnected()
+    except Exception as e:
+        logger.error(f"Error in main: {str(e)}")
+        raise
 
 if __name__ == "__main__":
     import asyncio

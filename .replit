@@ -73,7 +73,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python collector.py"
+args = "python3 collector.py"
 
 [[workflows.workflow]]
 name = "Telegram Client"
