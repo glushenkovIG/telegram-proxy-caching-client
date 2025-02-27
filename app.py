@@ -14,6 +14,10 @@ app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 # Initialize database
 db = SQLAlchemy(app)
 
+# Import and register routes
+from routes import bp
+app.register_blueprint(bp)
+
 # Message model
 class TelegramMessage(db.Model):
     __tablename__ = 'telegram_messages'  # Explicitly set table name
@@ -36,11 +40,7 @@ with app.app_context():
     except Exception as e:
         print(f"Database connection error on startup: {str(e)}")
 
-# Simple route to test
-@app.route('/')
-def index():
-    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).all()
-    return render_template('index.html', messages=messages)
+# Routes are now handled by the blueprint
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
