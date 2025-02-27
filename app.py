@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -35,11 +35,15 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Import routes after app initialization to avoid circular imports
-from api import api as api_blueprint
-app.register_blueprint(api_blueprint, url_prefix='/api')
-
 # Create database tables
 with app.app_context():
+    # Make sure to import the models here or their tables won't be created
+    import models  # noqa: F401
+
     db.create_all()
     logger.info("Database tables created successfully")
+
+# Register blueprints after initialization to avoid circular imports
+from routes import *  # This imports the main routes
+from api import api as api_blueprint  # This imports the API blueprint
+app.register_blueprint(api_blueprint, url_prefix='/api')

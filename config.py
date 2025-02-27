@@ -9,8 +9,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Telegram
-    TELEGRAM_API_ID = os.environ.get('TELEGRAM_API_ID')
-    TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH')
+    TELEGRAM_API_ID = 26162406
+    TELEGRAM_API_HASH = '7a005c82feee57d782a7e2f8399ddaf6'
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
     
     # Rate Limiting
@@ -20,5 +20,7 @@ class Config:
     # Target channels/groups
     TARGET_CHANNELS = [
         'tondev',
+        'toncoin',
+        'tondev_eng',
         # Add other TON dev channels here
     ]
