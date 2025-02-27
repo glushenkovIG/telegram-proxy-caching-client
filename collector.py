@@ -21,29 +21,26 @@ async def collect_messages():
     """Main collection function"""
     client = None
     try:
-        # Check if API credentials are set properly
-        if Config.TELEGRAM_API_ID == '12345' or Config.TELEGRAM_API_HASH == 'your-api-hash-here':
-            logger.error("Telegram API credentials not configured. Please set proper API_ID and API_HASH in config.py or environment variables.")
-            return
-
         session_path = 'ton_collector_session.session'
         if not os.path.exists(session_path):
-            logger.warning("No session file found. Please run telegram_client.py first to authenticate.")
+            logger.error("No session file found. Please run telegram_client.py first to authenticate.")
             return
 
+        # Use existing session
         client = TelegramClient(session_path, 
-                             Config.TELEGRAM_API_ID, 
-                             Config.TELEGRAM_API_HASH)
+                            Config.TELEGRAM_API_ID, 
+                            Config.TELEGRAM_API_HASH)
 
         await client.connect()
         if not await client.is_user_authorized():
-            logger.error("Session unauthorized. Please run telegram_client.py first")
+            logger.error("Session exists but unauthorized. Please run telegram_client.py first")
             return
 
-        logger.info("Connected to Telegram")
+        logger.info("Successfully connected using existing session")
 
         # Get all dialogs
-        dialogs = await client.get_dialogs(limit=200)
+        dialogs = await client.get_dialogs()
+        logger.info(f"Found {len(dialogs)} dialogs")
 
         # Process each dialog
         for dialog in dialogs:
