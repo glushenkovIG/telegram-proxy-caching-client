@@ -28,8 +28,15 @@ class TelegramMessage(db.Model):
 
 # Create tables
 with app.app_context():
-    db.drop_all()  # Reset tables since we've had schema issues
+    # Only create tables if they don't exist, don't reset data
+    # db.drop_all()  # Commented out to preserve existing data
     db.create_all()
+    # Check if we can connect and count messages
+    try:
+        count = TelegramMessage.query.count()
+        print(f"Database connected successfully. Current message count: {count}")
+    except Exception as e:
+        print(f"Database connection error: {str(e)}")
 
 # Simple route to test
 @app.route('/')
