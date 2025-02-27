@@ -37,7 +37,11 @@ class TelegramCollector:
 
     async def start(self):
         try:
-            logger.info("Starting Telegram collector...")
+            print("\n" + "="*50)
+            print("Starting Telegram Authentication Process")
+            print("Please watch for the phone number prompt below")
+            print("="*50 + "\n")
+
             # This will automatically prompt for phone number if needed
             await self.client.start()
 
