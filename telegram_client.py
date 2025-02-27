@@ -1,7 +1,9 @@
+import os
 import logging
 from telethon import TelegramClient, events
-from app import db, app
-from models import TelegramMessage
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import declarative_base
 from config import Config
 
 # Configure logging
@@ -11,87 +13,101 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class TelegramCollector:
-    def __init__(self):
-        self.client = TelegramClient(
-            'ton_collector_session',
-            Config.TELEGRAM_API_ID,
-            Config.TELEGRAM_API_HASH
-        )
+# Initialize Flask and database
+class Base(declarative_base()):
+    pass
 
-    def start(self):
-        import asyncio
-        asyncio.run(self._start())
+db = SQLAlchemy(model_class=Base)
+app = Flask(__name__)
 
-    async def _start(self):
-        try:
-            logger.info("Starting TelegramCollector...")
-            await self.client.connect()
+# Configure the database
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.secret_key = os.environ.get("SESSION_SECRET")
 
-            if not await self.client.is_user_authorized():
-                try:
-                    print("\n" + "="*50)
-                    print("TELEGRAM AUTHENTICATION REQUIRED")
-                    print("="*50)
+# Initialize SQLAlchemy
+db.init_app(app)
 
-                    await self.client.send_code_request(Config.TELEGRAM_PHONE)
-                    print(f"\n>>> A verification code has been sent to {Config.TELEGRAM_PHONE}")
-                    code = input(">>> Enter the verification code here: ")
+# Initialize Telegram client
+client = TelegramClient('ton_collector_session',
+                      Config.TELEGRAM_API_ID,
+                      Config.TELEGRAM_API_HASH)
 
-                    try:
-                        await self.client.sign_in(Config.TELEGRAM_PHONE, code)
-                    except Exception as e:
-                        if "2FA" in str(e) or "password" in str(e).lower():
-                            print("\n" + "="*50)
-                            print("TWO-FACTOR AUTHENTICATION REQUIRED")
-                            print("="*50)
-                            password = input(">>> Please enter your 2FA password: ")
-                            await self.client.sign_in(password=password)
-                        else:
-                            raise e
+@client.on(events.NewMessage)
+async def handle_message(event):
+    """Handle new messages from Telegram"""
+    try:
+        chat = await event.get_chat()
+        sender = await event.get_sender()
 
-                except Exception as auth_error:
-                    logger.error(f"Authentication error: {auth_error}")
-                    return
+        # Only process messages from TON channels
+        if not hasattr(chat, 'title') or not any(channel in chat.title for channel in Config.TON_CHANNELS):
+            return
 
-            # Only process messages from our target
-            @self.client.on(events.NewMessage())
-            async def message_handler(event):
-                try:
-                    chat = await event.get_chat()
+        # Save to database
+        with app.app_context():
+            from models import TelegramMessage
 
-                    # Only process messages from specified TON channels
-                    if not hasattr(chat, 'title') or not any(channel in chat.title for channel in Config.TON_CHANNELS):
-                        return
+            # Check for duplicate
+            existing = TelegramMessage.query.filter_by(
+                channel_id=str(event.chat_id),
+                message_id=event.message.id
+            ).first()
 
-                    sender = await event.get_sender()
+            if not existing and event.message.text:
+                message = TelegramMessage(
+                    message_id=event.message.id,
+                    channel_id=str(event.chat_id),
+                    channel_title=chat.title,
+                    sender_id=str(sender.id) if sender else None,
+                    sender_username=sender.username if sender else None,
+                    content=event.message.text,
+                    timestamp=event.message.date
+                )
+                db.session.add(message)
+                db.session.commit()
 
-                    # Save to database with app context
-                    with app.app_context():
-                        message = TelegramMessage(
-                            message_id=event.message.id,
-                            channel_id=str(event.chat_id),
-                            channel_title=chat.title,
-                            sender_id=str(sender.id) if sender else None,
-                            sender_username=sender.username if sender else None,
-                            content=event.message.text,
-                            timestamp=event.message.date
-                        )
-                        db.session.add(message)
-                        db.session.commit()
-                        logger.info(f"Stored message {message.message_id}")
+                # Log the message
+                print(f"[NEW MESSAGE] {chat.title} | {sender.username}: {event.message.text}")
+                logger.info(f"Saved message from {chat.title}")
 
-                except Exception as e:
-                    logger.error(f"Error processing message: {e}")
-                    if 'db' in locals():
-                        db.session.rollback()
+    except Exception as e:
+        logger.error(f"Error handling message: {e}")
+        if 'db' in locals():
+            db.session.rollback()
 
-            print("\n" + "="*50)
-            print("TELEGRAM COLLECTOR RUNNING")
-            print("Messages from TON channels will be collected")
-            print("="*50 + "\n")
+async def main():
+    """Main function to run the Telegram client"""
+    try:
+        # Create database tables
+        with app.app_context():
+            import models
+            db.create_all()
+            logger.info("Database tables created")
 
-            await self.client.run_until_disconnected()
+        await client.connect()
 
-        except Exception as e:
-            logger.error(f"Error in TelegramCollector: {e}")
+        if not await client.is_user_authorized():
+            print("\nTelegram authentication required")
+            await client.send_code_request(Config.TELEGRAM_PHONE)
+            code = input("Enter verification code: ")
+            try:
+                await client.sign_in(Config.TELEGRAM_PHONE, code)
+            except Exception as e:
+                if "2FA" in str(e):
+                    password = input("Enter 2FA password: ")
+                    await client.sign_in(password=password)
+                else:
+                    raise e
+
+        print("\nStarting message collection...")
+        await client.run_until_disconnected()
+
+    except Exception as e:
+        logger.error(f"Error in Telegram client: {e}")
+        raise
+
+if __name__ == "__main__":
+    # Run the client
+    import asyncio
+    asyncio.run(main())

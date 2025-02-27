@@ -1,11 +1,10 @@
 import os
 import logging
-import sys
 from telethon import TelegramClient, events
 from config import Config
-from app import app, db
-from models import TelegramMessage
-from datetime import datetime, timedelta
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -14,154 +13,85 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def main():
+# Initialize database
+DATABASE_URL = os.environ.get("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+Base = declarative_base()
+Session = sessionmaker(bind=engine)
+
+# Define message model
+class Message(Base):
+    __tablename__ = 'messages'
+
+    id = Column(Integer, primary_key=True)
+    sender_id = Column(String)
+    chat_id = Column(String)
+    message_text = Column(Text)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+# Create tables
+Base.metadata.create_all(engine)
+
+# Initialize Telegram client
+client = TelegramClient('ton_collector_session',
+                      Config.TELEGRAM_API_ID,
+                      Config.TELEGRAM_API_HASH)
+
+@client.on(events.NewMessage)
+async def handle_message(event):
+    """Handles new incoming messages and saves them to the database."""
     try:
-        # Create the client
-        client = TelegramClient('ton_collector_session',
-                              Config.TELEGRAM_API_ID,
-                              Config.TELEGRAM_API_HASH)
+        sender = await event.get_sender()
+        sender_id = str(sender.id) if sender else None
+        chat_id = str(event.chat_id)
+        message_text = event.raw_text
 
-        print("\n" + "="*50)
-        print("CONNECTING TO TELEGRAM")
-        print("="*50)
+        # Save to database
+        session = Session()
+        message = Message(
+            sender_id=sender_id,
+            chat_id=chat_id,
+            message_text=message_text
+        )
+        session.add(message)
+        session.commit()
 
+        print(f"[NEW MESSAGE] {chat_id} | {sender_id}: {message_text}")
+
+    except Exception as e:
+        logger.error(f"Error handling message: {e}")
+        if 'session' in locals():
+            session.rollback()
+    finally:
+        if 'session' in locals():
+            session.close()
+
+async def main():
+    """Main function to run the client"""
+    try:
+        print("Connecting to Telegram...")
         await client.connect()
 
         if not await client.is_user_authorized():
-            print("\n" + "="*50)
-            print("TELEGRAM AUTHENTICATION REQUIRED")
-            print("="*50)
-
-            # Request verification code
+            logger.info("Authentication required")
             await client.send_code_request(Config.TELEGRAM_PHONE)
-            print(f"\n>>> Code sent to {Config.TELEGRAM_PHONE}")
-            print(">>> Please enter the code below:")
-            code = input(">>> Code: ")
-
+            code = input("Enter the verification code: ")
             try:
                 await client.sign_in(Config.TELEGRAM_PHONE, code)
             except Exception as e:
-                if "2FA" in str(e) or "password" in str(e).lower():
-                    print("\n" + "="*50)
-                    print("TWO-FACTOR AUTHENTICATION REQUIRED")
-                    print("="*50)
-                    password = input(">>> 2FA Password: ")
+                if "2FA" in str(e):
+                    password = input("Enter 2FA password: ")
                     await client.sign_in(password=password)
                 else:
                     raise e
 
-        print("\nSuccessfully connected to Telegram!")
-
-        # Get all dialogs and filter TON-related ones
-        print("\nFetching TON development channels...")
-        dialogs = await client.get_dialogs()
-        ton_channels = [d for d in dialogs if d.name and any(channel in d.name for channel in Config.TON_CHANNELS)]
-
-        if not ton_channels:
-            print("No TON development channels found! Please make sure you have access to these channels.")
-            print("Required channels:", ", ".join(Config.TON_CHANNELS))
-            return
-
-        print("\nMonitoring the following TON channels:")
-        for channel in ton_channels:
-            print(f"- {channel.name}")
-
-        # First, fetch historical messages from each channel
-        print("\nFetching historical messages...")
-        with app.app_context():
-            for channel in ton_channels:
-                try:
-                    print(f"\nProcessing channel: {channel.name}")
-                    messages = await client.get_messages(channel, limit=None)
-                    for msg in messages:
-                        if not msg.text:  # Skip non-text messages
-                            continue
-
-                        # Check if message already exists
-                        existing = TelegramMessage.query.filter_by(
-                            channel_id=str(channel.id),
-                            message_id=msg.id
-                        ).first()
-
-                        if not existing:
-                            message = TelegramMessage(
-                                message_id=msg.id,
-                                channel_id=str(channel.id),
-                                channel_title=channel.name,
-                                sender_id=str(msg.sender_id) if msg.sender_id else None,
-                                sender_username=msg.sender.username if msg.sender else None,
-                                content=msg.text,
-                                timestamp=msg.date
-                            )
-                            db.session.add(message)
-
-                    db.session.commit()
-                    print(f"Finished processing {channel.name}")
-
-                except Exception as e:
-                    logger.error(f"Error processing channel {channel.name}: {e}")
-                    db.session.rollback()
-
-        print("\nHistorical messages collected. Now monitoring for new messages...")
-
-        # Then start monitoring new messages
-        @client.on(events.NewMessage)
-        async def message_handler(event):
-            try:
-                chat = await event.get_chat()
-
-                # Only process messages from specified TON channels
-                if not hasattr(chat, 'title') or not any(channel in chat.title for channel in Config.TON_CHANNELS):
-                    return
-
-                sender = await event.get_sender()
-
-                # Save to database with app context
-                with app.app_context():
-                    # Check for duplicate
-                    existing = TelegramMessage.query.filter_by(
-                        channel_id=str(event.chat_id),
-                        message_id=event.message.id
-                    ).first()
-
-                    if not existing and event.message.text:  # Only save new text messages
-                        message = TelegramMessage(
-                            message_id=event.message.id,
-                            channel_id=str(event.chat_id),
-                            channel_title=chat.title,
-                            sender_id=str(sender.id) if sender else None,
-                            sender_username=sender.username if sender else None,
-                            content=event.message.text,
-                            timestamp=event.message.date
-                        )
-                        db.session.add(message)
-                        db.session.commit()
-                        logger.info(f"Saved new message {message.message_id} from {chat.title}")
-
-                        # Print to console
-                        print("\n" + "="*50)
-                        print(f"Channel: {chat.title}")
-                        print(f"From: {sender.username or sender.first_name if sender else 'Unknown'}")
-                        print("-"*50)
-                        print(f"{event.message.text}")
-                        print(f"Time: {event.message.date}")
-                        print("="*50)
-
-            except Exception as e:
-                logger.error(f"Error handling message: {e}")
-                if 'db' in locals():
-                    db.session.rollback()
-
-        print("\n" + "="*50)
-        print("TELEGRAM COLLECTOR RUNNING")
-        print("Monitoring TON development channels and saving to database")
-        print("="*50 + "\n")
-
+        print("Connected successfully!")
+        print("Listening for incoming messages...")
         await client.run_until_disconnected()
 
     except Exception as e:
-        logger.error(f"Error in main: {str(e)}")
-        sys.exit(1)
+        logger.error(f"Error in main: {e}")
+        raise
 
 if __name__ == "__main__":
     import asyncio
