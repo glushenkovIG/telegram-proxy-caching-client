@@ -1,11 +1,14 @@
 import os
 import logging
-from flask import Flask, render_template
-from models import db, TelegramMessage
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Initialize SQLAlchemy
+db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
@@ -13,9 +16,13 @@ def create_app():
     # Configure database
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
-    # Initialize database
+    # Initialize extensions
     db.init_app(app)
 
     @app.route('/')
@@ -30,9 +37,14 @@ def create_app():
 
     return app
 
+# Create app instance
+app = create_app()
+
+# Create tables within app context
+with app.app_context():
+    from models import TelegramMessage  # Import here to avoid circular imports
+    db.create_all()
+    logger.info("Database tables created successfully")
+
 if __name__ == "__main__":
-    app = create_app()
-    with app.app_context():
-        db.create_all()
-        logger.info("Database tables created successfully")
     app.run(host="0.0.0.0", port=5000, debug=True)

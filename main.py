@@ -3,6 +3,8 @@ import logging
 import sys
 from telethon import TelegramClient, events
 from config import Config
+from app import app, db
+from models import TelegramMessage
 
 # Configure logging
 logging.basicConfig(
@@ -74,6 +76,21 @@ async def main():
 
                 sender = await event.get_sender()
 
+                # Save to database with app context
+                with app.app_context():
+                    message = TelegramMessage(
+                        message_id=event.message.id,
+                        channel_id=str(event.chat_id),
+                        channel_title=chat.title,
+                        sender_id=str(sender.id) if sender else None,
+                        sender_username=sender.username if sender else None,
+                        content=event.message.text,
+                        timestamp=event.message.date
+                    )
+                    db.session.add(message)
+                    db.session.commit()
+                    logger.info(f"Saved message {message.message_id} from {chat.title}")
+
                 # Print to console
                 print("\n" + "="*50)
                 print(f"Channel: {chat.title}")
@@ -85,10 +102,12 @@ async def main():
 
             except Exception as e:
                 logger.error(f"Error handling message: {e}")
+                if 'db' in locals():
+                    db.session.rollback()
 
         print("\n" + "="*50)
         print("TELEGRAM COLLECTOR RUNNING")
-        print("Monitoring TON development channels")
+        print("Monitoring TON development channels and saving to database")
         print("="*50 + "\n")
 
         await client.run_until_disconnected()
