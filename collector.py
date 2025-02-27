@@ -42,8 +42,13 @@ async def handle_message(event):
         # Only show messages from exact channel matches
         if chat_title and chat_title.strip() in TON_CHANNELS:
             sender = await event.get_sender()
+            chat_username = getattr(chat, 'username', None)
+            chat_link = f"https://t.me/{chat_username}" if chat_username else "Private Channel"
+
             print("\n==================================================")
             print(f"Channel: {chat_title}")
+            print(f"Channel ID: {chat.id}")
+            print(f"Channel Link: {chat_link}")
             print(f"From: {sender.username or sender.first_name if sender else 'Unknown'}")
             print("--------------------------------------------------")
             print(f"Message: {event.message.text}")
