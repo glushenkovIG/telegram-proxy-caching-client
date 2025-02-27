@@ -15,4 +15,5 @@ dependencies = [
     "flask-limiter>=3.10.1",
     "sqlalchemy>=2.0.38",
     "twilio>=9.4.6",
+    "tqdm>=4.67.1",
 ]

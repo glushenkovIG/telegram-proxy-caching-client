@@ -758,6 +758,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "sqlalchemy" },
     { name = "telethon" },
+    { name = "tqdm" },
     { name = "twilio" },
 ]
 
@@ -773,6 +774,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "sqlalchemy", specifier = ">=2.0.38" },
     { name = "telethon", specifier = ">=1.39.0" },
+    { name = "tqdm", specifier = ">=4.67.1" },
     { name = "twilio", specifier = ">=9.4.6" },
 ]
 
@@ -864,6 +866,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/54/b2/6e48b593a0e4e678578a682332ef36e54648c78ef13a5d395e5cdd293c6d/telethon-1.39.0.tar.gz", hash = "sha256:35d4795d8c91deac515fb0bcb3723866b924de1c724e1d5c230460e96f284a63", size = 640634 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/32/f2/4e66a59c6d0cb6a25c0c2a630b4b184d81cfe8cb982bf3b65ce32b020fc8/Telethon-1.39.0-py3-none-any.whl", hash = "sha256:aa9f394b94be144799a6f6a93ab463867bc7c63503ede9631751940a98f6c703", size = 715851 },
+]
+
+[[package]]
+name = "tqdm"
+version = "4.67.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2", size = 78540 },
 ]
 
 [[package]]
