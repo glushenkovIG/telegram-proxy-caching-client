@@ -11,7 +11,7 @@ client = TelegramClient('ton_collector_session',
 other_messages = 0
 pbar = tqdm(desc="Other messages", unit=" msgs")
 
-# Exact list of TON channels from screenshot
+# Exact list of TON channels from screenshot -  This set needs to be updated based on the screenshot.  I am leaving it as is because the screenshot is unavailable.
 TON_CHANNELS = {
     'TON Dev News',
     'Hackers League Hackathon',
@@ -40,7 +40,8 @@ async def handle_message(event):
         chat_title = getattr(chat, 'title', None)
 
         # Only show messages from exact channel matches
-        if chat_title in TON_CHANNELS:
+        if chat_title and chat_title.strip() in TON_CHANNELS:
+            # Print TON channel messages
             sender = await event.get_sender()
             print("\n" + "="*50)
             print(f"Channel: {chat_title}")
