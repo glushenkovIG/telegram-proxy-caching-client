@@ -56,22 +56,21 @@ async def collect_messages():
         # Collect all dialogs without pre-filtering
         logger.info("Getting all dialogs without pre-filtering")
         try:
-            # Collect recent messages from all dialogs
-            dialogs = await client.get_dialogs(limit=100)
-
-            # Store all dialogs, not just channels
+            # Use a larger limit to get more channels
+            dialogs = await client.get_dialogs(limit=200)
             all_dialogs = []
+
             if isinstance(dialogs, list):
                 all_dialogs = dialogs
                 logger.info(f"Found {len(all_dialogs)} total dialogs")
             else:
-                logger.warning(f"Dialogs object isn't a list, type: {type(dialogs)}")
+                logger.warning("Dialogs object isn't a list")
                 # Try to get individual dialogs instead
                 try:
                     entities = []
                     for entity_id in [
-                        # Add some known entities by ID to try
-                        "tonblockchain", "tondev", "toncoin"
+                        "tonblockchain", "tondev", "toncoin", 
+                        "ton_english", "TONDevelopers", "ton_ru"  # Add more channels
                     ]:
                         try:
                             entity = await client.get_entity(entity_id)
@@ -83,13 +82,14 @@ async def collect_messages():
                 except Exception as e:
                     logger.error(f"Error getting individual entities: {str(e)}")
                     all_dialogs = []
+
         except Exception as e:
             logger.error(f"Error getting dialogs: {str(e)}")
             all_dialogs = []
 
         logger.info(f"Processing {len(all_dialogs)} dialogs")
 
-        # Process all dialogs, not just channels
+        # Process all dialogs
         for dialog in all_dialogs:
             try:
                 dialog_id = getattr(dialog, 'id', None)
@@ -101,63 +101,75 @@ async def collect_messages():
 
                 logger.info(f"Processing dialog: {dialog_title}")
 
-                # Get folder info to check if it's in TON Dev folder
-                folder = None
+                # Check if it's a TON Dev channel
+                is_ton_dev = False
                 try:
+                    # First try folder-based detection
                     folder = await client(client.get_dialogs_request())
                     is_ton_dev = any(
                         f.title.lower() in ["ton dev", "ton devs"] and any(
                             p.peer.channel_id == dialog_id for p in f.include_peers
                         ) for f in folder.folders if hasattr(f, 'title')
                     )
-                    logger.info(f"Dialog {dialog_title} - TON Dev folder check: {is_ton_dev}")
+
+                    # If not in TON Dev folder, check title
                     if not is_ton_dev:
-                        # Also check if the channel name itself indicates it's a TON dev channel
                         is_ton_dev = any(keyword.lower() in dialog_title.lower() 
-                                       for keyword in ["ton dev", "ton development", "开发", "developers"])
-                        if is_ton_dev:
-                            logger.info(f"Dialog {dialog_title} marked as TON Dev based on title")
+                                      for keyword in ["ton dev", "ton development", "开发", "developers", "telegram developers"])
                 except Exception as e:
-                    logger.error(f"Error getting folder info for {dialog_title}: {str(e)}")
-                    # Fall back to title-based detection if folder check fails
+                    logger.error(f"Error checking TON Dev status for {dialog_title}: {str(e)}")
+                    # Fallback to title check
                     is_ton_dev = any(keyword.lower() in dialog_title.lower() 
-                                   for keyword in ["ton dev", "ton development", "开发", "developers"])
-                    logger.info(f"Fallback title check for {dialog_title}: {is_ton_dev}")
+                                  for keyword in ["ton dev", "ton development", "开发", "developers", "telegram developers"])
+
+                logger.info(f"Channel {dialog_title} - TON Dev status: {is_ton_dev}")
 
                 with app.app_context():
-                    # Check latest stored message
-                    latest_msg = TelegramMessage.query.filter_by(
-                        channel_id=str(dialog_id)
-                    ).order_by(TelegramMessage.message_id.desc()).first()
+                    try:
+                        # Check latest stored message
+                        latest_msg = TelegramMessage.query.filter_by(
+                            channel_id=str(dialog_id)
+                        ).order_by(TelegramMessage.message_id.desc()).first()
 
-                    latest_id = latest_msg.message_id if latest_msg else 0
+                        latest_id = latest_msg.message_id if latest_msg else 0
 
-                    logger.info(f"Checking {dialog_title} for new messages after ID {latest_id}")
+                        # Get recent messages (increased limit)
+                        message_count = 0
+                        async for message in client.iter_messages(dialog, limit=100):
+                            if message.id <= latest_id:
+                                break
 
-                    # Get recent messages (limit to avoid too many at once)
-                    message_count = 0
-                    async for message in client.iter_messages(dialog, limit=50, min_id=latest_id):
-                        if message.text:
-                            # Store message
-                            with app.app_context():
-                                new_msg = TelegramMessage(
-                                    message_id=message.id,
-                                    channel_id=str(dialog_id),
-                                    channel_title=dialog_title,
-                                    content=message.text,
-                                    timestamp=message.date,
-                                    is_ton_dev=is_ton_dev
-                                )
-                                db.session.add(new_msg)
-                                db.session.commit()
-                            message_count += 1
-                            if message_count % 10 == 0:
-                                logger.info(f"Saved {message_count} messages from {dialog_title}")
+                            if message.text:
+                                try:
+                                    new_msg = TelegramMessage(
+                                        message_id=message.id,
+                                        channel_id=str(dialog_id),
+                                        channel_title=dialog_title,
+                                        content=message.text,
+                                        timestamp=message.date,
+                                        is_ton_dev=is_ton_dev
+                                    )
+                                    db.session.add(new_msg)
+                                    message_count += 1
 
-                    if message_count > 0:
-                        logger.info(f"Total saved {message_count} messages from {dialog_title}")
+                                    if message_count % 10 == 0:
+                                        db.session.commit()
+                                        logger.info(f"Saved {message_count} messages from {dialog_title}")
+                                except Exception as e:
+                                    logger.error(f"Error saving message: {str(e)}")
+                                    db.session.rollback()
+                                    continue
+
+                        if message_count > 0:
+                            db.session.commit()
+                            logger.info(f"Total saved {message_count} new messages from {dialog_title}")
+                    except Exception as e:
+                        logger.error(f"Error processing messages for {dialog_title}: {str(e)}")
+                        db.session.rollback()
+                        continue
+
             except Exception as e:
-                logger.error(f"Error processing dialog {dialog_title}: {str(e)}")
+                logger.error(f"Error processing dialog: {str(e)}")
                 continue
 
     except Exception as e:

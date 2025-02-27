@@ -21,11 +21,11 @@ args = "Flask API and Telegram Collector"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask Server"
+args = "Update Labels"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Update Labels"
+args = "Flask Server"
 
 [[workflows.workflow]]
 name = "Flask API and Telegram Collector"
@@ -59,6 +59,20 @@ task = "shell.exec"
 args = "python main.py"
 
 [[workflows.workflow]]
+name = "Update Labels"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python update_labels.py"
+
+[[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
 
@@ -72,20 +86,6 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Update Labels"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python update_labels.py"
 
 [[ports]]
 localPort = 3000
