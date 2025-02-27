@@ -106,13 +106,23 @@ async def collect_messages():
                 try:
                     folder = await client(client.get_dialogs_request())
                     is_ton_dev = any(
-                        f.title == "TON Devs" and any(
+                        f.title.lower() in ["ton dev", "ton devs"] and any(
                             p.peer.channel_id == dialog_id for p in f.include_peers
                         ) for f in folder.folders if hasattr(f, 'title')
                     )
+                    logger.info(f"Dialog {dialog_title} - TON Dev folder check: {is_ton_dev}")
+                    if not is_ton_dev:
+                        # Also check if the channel name itself indicates it's a TON dev channel
+                        is_ton_dev = any(keyword.lower() in dialog_title.lower() 
+                                       for keyword in ["ton dev", "ton development", "开发", "developers"])
+                        if is_ton_dev:
+                            logger.info(f"Dialog {dialog_title} marked as TON Dev based on title")
                 except Exception as e:
-                    logger.error(f"Error getting folder info: {str(e)}")
-                    is_ton_dev = False
+                    logger.error(f"Error getting folder info for {dialog_title}: {str(e)}")
+                    # Fall back to title-based detection if folder check fails
+                    is_ton_dev = any(keyword.lower() in dialog_title.lower() 
+                                   for keyword in ["ton dev", "ton development", "开发", "developers"])
+                    logger.info(f"Fallback title check for {dialog_title}: {is_ton_dev}")
 
                 with app.app_context():
                     # Check latest stored message
