@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Flask Server"
+runButton = "Telegram Collector"
 
 [[workflows.workflow]]
 name = "Project"
