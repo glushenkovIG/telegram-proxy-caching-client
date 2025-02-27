@@ -19,6 +19,39 @@ class TelegramCollector:
         self.is_connected = False
         self.target_channels = set()
 
+    async def start(self):
+        try:
+            print("\n" + "="*50)
+            print("Starting Telegram Authentication Process")
+            print("Please enter your phone number in international format")
+            print("Example: +1234567890")
+            print("After entering your phone number, you'll receive a code")
+            print("Please enter that code when prompted")
+            print("="*50 + "\n")
+
+            # First connect to the server
+            await self.client.connect()
+
+            if not await self.client.is_user_authorized():
+                # Clear guidance for phone number input
+                print("\nPlease enter your phone number now:")
+                await self.client.start()
+
+            self.is_connected = True
+            logger.info("Successfully connected to Telegram")
+
+            # Get channels from the target folder
+            if not await self.get_channels_from_folder():
+                logger.error("Failed to get channels from folder")
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error starting Telegram collector: {str(e)}")
+            self.is_connected = False
+            return False
+
     async def get_channels_from_folder(self):
         """Get all channels from the specified folder."""
         try:
@@ -35,38 +68,8 @@ class TelegramCollector:
             logger.error(f"Error getting channels from folder: {str(e)}")
             return False
 
-    async def start(self):
-        try:
-            print("\n" + "="*50)
-            print("Starting Telegram Authentication Process")
-            print("Please enter your phone number in international format")
-            print("Example: +1234567890")
-            print("After entering your phone number, you'll receive a code")
-            print("Please enter that code when prompted")
-            print("="*50 + "\n")
-
-            # Clear guidance for phone number input
-            print("\nPlease enter your phone number now:")
-            await self.client.start()
-
-            if not await self.client.is_user_authorized():
-                logger.error("Client not authorized. Please enter your phone number when prompted")
-                return False
-
-            self.is_connected = True
-            logger.info("Successfully connected to Telegram")
-
-            # Get channels from the target folder
-            if not await self.get_channels_from_folder():
-                logger.error("Failed to get channels from folder")
-                return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error starting Telegram collector: {str(e)}")
-            self.is_connected = False
-            return False
+    def is_running(self):
+        return self.is_connected
 
     async def fetch_history(self, channel, limit=100):
         """Fetch historical messages from a channel."""
@@ -98,6 +101,3 @@ class TelegramCollector:
         except Exception as e:
             logger.error(f"Error fetching history from {channel.title}: {str(e)}")
             db.session.rollback()
-
-    def is_running(self):
-        return self.is_connected
