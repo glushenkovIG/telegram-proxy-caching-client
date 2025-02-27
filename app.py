@@ -46,5 +46,13 @@ def index():
         return f"Database error: {str(e)}", 500
 
 if __name__ == "__main__":
-    # ALWAYS serve the app on port 5000
-    app.run(host='0.0.0.0', port=5000)
+    try:
+        # First try port 5000
+        app.run(host='0.0.0.0', port=5000, debug=False)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print("Port 5000 is in use, trying port 8080...")
+            # If port 5000 is busy, use 8080
+            app.run(host='0.0.0.0', port=8080, debug=False)
+        else:
+            raise

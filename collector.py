@@ -1,5 +1,5 @@
 import logging
-from telethon import TelegramClient, events
+from telethon import TelegramClient, events, tl
 from config import Config
 from app import app, db, TelegramMessage
 
@@ -26,9 +26,20 @@ async def handle_message(event):
         if not event.message.text:
             return
 
-        # Get folder info
-        folder = await client.get_folder(chat)
-        is_ton_folder = folder and folder.title == "TON Devs"
+        # Get dialog info to check folder
+        dialog = await client.get_dialogs()
+        is_ton_dev = False
+
+        # Check if the chat is in TON Dev folder
+        for d in dialog:
+            if d.entity.id == chat.id:
+                folder = await client(tl.functions.messages.GetDialogFiltersRequest())
+                for f in folder:
+                    if hasattr(f, 'title') and f.title == "TON Devs":
+                        if any(p.peer.channel_id == chat.id for p in f.include_peers):
+                            is_ton_dev = True
+                            break
+                break
 
         # Store in database
         with app.app_context():
@@ -38,11 +49,11 @@ async def handle_message(event):
                 channel_title=chat_title,
                 content=event.message.text,
                 timestamp=event.message.date,
-                is_ton_dev=is_ton_folder
+                is_ton_dev=is_ton_dev
             )
             db.session.add(message)
             db.session.commit()
-            logger.info(f"Stored message from {chat_title} (TON Dev: {is_ton_folder})")
+            logger.info(f"Stored message from {chat_title} (TON Dev: {is_ton_dev})")
 
     except Exception as e:
         logger.error(f"Error handling message: {str(e)}")
