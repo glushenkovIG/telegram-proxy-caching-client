@@ -5,6 +5,8 @@ from telethon import TelegramClient, events
 from tqdm import tqdm
 from config import Config
 import asyncio
+from app import app, db
+from models import TelegramMessage
 
 # Set up basic logging
 logging.basicConfig(
@@ -12,7 +14,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
 
 # Initialize client
 client = TelegramClient('ton_collector_session', 
@@ -56,9 +57,25 @@ async def handle_message(event):
 
         print(f"\nReceived message from chat: {chat_title}")  # Debug line
 
-        # Only show messages from exact channel matches
+        # Save all messages to database
+        sender = await event.get_sender()
+        with app.app_context():
+            message = TelegramMessage(
+                message_id=event.message.id,
+                channel_id=str(chat.id),
+                channel_title=chat_title,
+                channel_username=chat_username,
+                sender_id=str(sender.id) if sender else None,
+                sender_username=sender.username or sender.first_name if sender else 'Unknown',
+                content=event.message.text,
+                timestamp=event.message.date,
+                is_ton_dev=bool(chat_title and chat_title.strip() in TON_CHANNELS)
+            )
+            db.session.add(message)
+            db.session.commit()
+
+        # Only show messages from exact channel matches in console
         if chat_title and chat_title.strip() in TON_CHANNELS:
-            sender = await event.get_sender()
             print("\n==================================================")
             print(f"Channel: {chat_title}")
             print(f"Channel ID: {chat.id}")
