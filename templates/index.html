@@ -12,6 +12,9 @@
             <div class="card mb-3">
                 <div class="card-header">
                     <strong>{{ message.channel_title }}</strong>
+                    {% if message.is_ton_dev %}
+                    <span class="badge bg-primary">TON Dev</span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <p class="card-text">{{ message.content }}</p>
@@ -33,20 +36,24 @@
                 <ul class="pagination justify-content-center">
                     {% if pagination.has_prev %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('index', page=pagination.prev_num) }}">&laquo; Previous</a>
+                        <a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num) }}">&laquo; Previous</a>
                     </li>
                     {% endif %}
 
-                    {# Show current page and neighbors #}
-                    {% for page_num in range(max(1, pagination.page - 2), min(pagination.pages + 1, pagination.page + 3)) %}
+                    {# Show at most 5 pages centered around current page #}
+                    {% set start_page = pagination.page - 2 if pagination.page > 2 else 1 %}
+                    {% set end_page = start_page + 4 if start_page + 4 <= pagination.pages else pagination.pages %}
+                    {% set start_page = end_page - 4 if end_page - 4 > 0 and end_page == pagination.pages else start_page %}
+
+                    {% for page_num in range(start_page, end_page + 1) %}
                     <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('index', page=page_num) }}">{{ page_num }}</a>
+                        <a class="page-link" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
                     </li>
                     {% endfor %}
 
                     {% if pagination.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('index', page=pagination.next_num) }}">Next &raquo;</a>
+                        <a class="page-link" href="{{ url_for('main.index', page=pagination.next_num) }}">Next &raquo;</a>
                     </li>
                     {% endif %}
                 </ul>

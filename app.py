@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
@@ -9,41 +8,24 @@ app = Flask(__name__)
 # Configure database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
 # Initialize database
 db = SQLAlchemy(app)
 
-# Message model
-class TelegramMessage(db.Model):
-    __tablename__ = 'telegram_messages'
+with app.app_context():
+    # Make sure to import the models here or their tables won't be created
+    import models  # noqa: F401
 
-    id = db.Column(db.Integer, primary_key=True)
-    message_id = db.Column(db.Integer, nullable=False)
-    channel_id = db.Column(db.String(100), nullable=False)
-    channel_title = db.Column(db.String(200))
-    content = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    is_ton_dev = db.Column(db.Boolean, default=False)
+    db.create_all()
 
-# Create tables
-try:
-    with app.app_context():
-        db.create_all()
-        print("Database tables created successfully")
-except Exception as e:
-    print(f"Database initialization error: {str(e)}")
-    # Don't fail on startup, just log the error
-
-@app.route('/')
-def index():
-    try:
-        total_count = TelegramMessage.query.count()
-        ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
-        return f"Server running. Total messages: {total_count} (TON Dev messages: {ton_count})"
-    except Exception as e:
-        app.logger.error(f"Database error: {str(e)}")
-        return f"Database error: {str(e)}", 500
+# Register blueprints after models are created
+from routes import bp
+app.register_blueprint(bp)
 
 if __name__ == "__main__":
     try:

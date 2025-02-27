@@ -1,12 +1,13 @@
 from datetime import datetime
 from app import db
 
-# The TelegramMessage model is already defined in app.py
-# This file is not needed and might cause conflicts
+class TelegramMessage(db.Model):
+    __tablename__ = 'telegram_messages'
 
-# Uncomment if you want to add additional models not in app.py
-"""
-class AdditionalModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # Add your fields here
-"""
+    message_id = db.Column(db.Integer, nullable=False)
+    channel_id = db.Column(db.String(100), nullable=False)
+    channel_title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_ton_dev = db.Column(db.Boolean, default=False)

@@ -1,6 +1,5 @@
-
 from flask import Blueprint, render_template, request, jsonify
-from app import db, TelegramMessage
+from models import TelegramMessage, db
 
 bp = Blueprint('main', __name__)
 
@@ -21,13 +20,14 @@ def index():
 
     return render_template('index.html', 
                         messages=pagination.items,
-                        pagination=pagination)
+                        pagination=pagination,
+                        total_messages=TelegramMessage.query.count())
 
 @bp.route('/status')
 def status():
     try:
         from config import Config
-        
+
         message_count = TelegramMessage.query.count()
         channel_count = db.session.query(TelegramMessage.channel_title)\
                                 .distinct()\
@@ -35,7 +35,7 @@ def status():
         latest_message = TelegramMessage.query\
             .order_by(TelegramMessage.timestamp.desc())\
             .first()
-            
+
         # Check if API credentials are set
         api_id_set = bool(Config.TELEGRAM_API_ID and Config.TELEGRAM_API_ID != '12345')
         api_hash_set = bool(Config.TELEGRAM_API_HASH and Config.TELEGRAM_API_HASH != 'your-api-hash-here')

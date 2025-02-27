@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Run App"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -18,10 +18,6 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Flask API and Telegram Collector"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Telegram Collector"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -51,18 +47,12 @@ task = "shell.exec"
 args = "python app.py"
 
 [[workflows.workflow]]
-name = "Telegram Collector"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
+name = "Run App"
+author = 36288906
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python collector.py"
+args = "python main.py"
 
 [[workflows.workflow]]
 name = "Flask Server"
@@ -76,16 +66,8 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Run App"
-author = 36288906
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "python main.py"
+waitForPort = 5000
 
 [[ports]]
 localPort = 3000
