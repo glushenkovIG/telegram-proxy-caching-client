@@ -26,6 +26,10 @@ async def handle_message(event):
         if not event.message.text:
             return
 
+        # Get folder info
+        folder = await client.get_folder(chat)
+        is_ton_folder = folder and folder.title == "TON Devs"
+
         # Store in database
         with app.app_context():
             message = TelegramMessage(
@@ -34,11 +38,11 @@ async def handle_message(event):
                 channel_title=chat_title,
                 content=event.message.text,
                 timestamp=event.message.date,
-                is_ton_dev=chat_title in Config.TON_CHANNELS if chat_title else False
+                is_ton_dev=is_ton_folder
             )
             db.session.add(message)
             db.session.commit()
-            logger.info(f"Stored message from {chat_title}")
+            logger.info(f"Stored message from {chat_title} (TON Dev: {is_ton_folder})")
 
     except Exception as e:
         logger.error(f"Error handling message: {str(e)}")

@@ -27,17 +27,24 @@ class TelegramMessage(db.Model):
     is_ton_dev = db.Column(db.Boolean, default=False)
 
 # Create tables
-with app.app_context():
-    db.create_all()
-    print("Database tables created successfully")
+try:
+    with app.app_context():
+        db.create_all()
+        print("Database tables created successfully")
+except Exception as e:
+    print(f"Database initialization error: {str(e)}")
+    # Don't fail on startup, just log the error
 
 @app.route('/')
 def index():
     try:
-        count = TelegramMessage.query.count()
-        return f"Server running. Total messages: {count}"
+        total_count = TelegramMessage.query.count()
+        ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
+        return f"Server running. Total messages: {total_count} (TON Dev messages: {ton_count})"
     except Exception as e:
+        app.logger.error(f"Database error: {str(e)}")
         return f"Database error: {str(e)}", 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    # ALWAYS serve the app on port 5000
+    app.run(host='0.0.0.0', port=5000)
