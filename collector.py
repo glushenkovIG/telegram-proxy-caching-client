@@ -1,27 +1,21 @@
 import os
 import logging
-import time
 import random
 from telethon import TelegramClient, events
 from tqdm import tqdm
 from config import Config
+import asyncio
 
 # Set up basic logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Add a small random delay before initializing to avoid simultaneous access
-time.sleep(random.uniform(1, 3))
 
-# Initialize client with credentials from config
-# Use a unique session name if running multiple instances
-session_suffix = os.environ.get('SESSION_SUFFIX', '')
-session_name = f'ton_collector_session{session_suffix}'
-
-client = TelegramClient(session_name, 
+# Initialize client
+client = TelegramClient('ton_collector_session', 
                        Config.TELEGRAM_API_ID,
                        Config.TELEGRAM_API_HASH,
                        connection_retries=5)
@@ -85,23 +79,16 @@ async def handle_message(event):
 async def main():
     try:
         print("Connecting to Telegram...")
-        await client.start()
+        await client.connect()
         me = await client.get_me()
         print(f"\nConnected as: {me.username}")
-        print(f"Using session: {session_name}")
         print("\nMonitoring these channels:")
         for channel in sorted(TON_CHANNELS):
             print(f"- {channel}")
         print("\nWaiting for messages...")
-        
-        # Add periodic state saving to avoid database locks
-        while await client.is_connected():
-            await asyncio.sleep(60)  # Save state every minute
-            try:
-                client._save_states_and_entities()
-                logger.info("Saved client state successfully")
-            except Exception as e:
-                logger.warning(f"Error saving state: {e}")
+
+        # Keep running until interrupted
+        await client.disconnected
     except Exception as e:
         logger.error(f"Error in main: {e}")
     finally:
@@ -110,15 +97,9 @@ async def main():
         logger.info("Client disconnected")
 
 if __name__ == "__main__":
-    import asyncio
     try:
-        # Use a different event loop policy for Windows if needed
-        if os.name == 'nt':
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        
-        # Run with proper exception handling
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(main())
+        # Run with proper exception handling  
+        asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Process interrupted by user")
     except Exception as e:
