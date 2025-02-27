@@ -1,22 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
-    <h1>Telegram Messages</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>TON Development Messages</h1>
+        <p class="text-muted">Total messages: {{ total_messages }}</p>
+    </div>
+
     <div class="messages mt-4">
         {% if messages %}
             {% for message in messages %}
             <div class="card mb-3">
+                <div class="card-header">
+                    <strong>{{ message.channel_title }}</strong>
+                </div>
                 <div class="card-body">
                     <p class="card-text">{{ message.content }}</p>
-                    <small class="text-muted">
-                        From: {{ message.sender_username or 'Unknown' }} | 
-                        Time: {{ message.timestamp }}
-                    </small>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            From: {{ message.sender_username or 'Unknown' }}
+                        </small>
+                        <small class="text-muted">
+                            {{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </small>
+                    </div>
                 </div>
             </div>
             {% endfor %}
+
+            {# Pagination controls #}
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Message navigation">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=pagination.prev_num) }}">&laquo; Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {# Show current page and neighbors #}
+                    {% for page_num in range(max(1, pagination.page - 2), min(pagination.pages + 1, pagination.page + 3)) %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('index', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=pagination.next_num) }}">Next &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         {% else %}
-            <div class="alert alert-info">No messages found yet. Please check back later.</div>
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No messages yet!</h4>
+                <p>The collector is running and will display messages here as they are received from TON development channels.</p>
+            </div>
         {% endif %}
     </div>
 </div>

@@ -1,6 +1,7 @@
 import os
 import logging
-from flask import Flask, render_template
+import socket
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
@@ -41,12 +42,68 @@ with app.app_context():
 def index():
     try:
         from models import TelegramMessage
-        messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100).all()
-        logger.info(f"Retrieved {len(messages)} messages from database")
-        return render_template('index.html', messages=messages)
+        page = request.args.get('page', 1, type=int)
+        per_page = 50  # Show 50 messages per page
+
+        # Get total message count
+        total_messages = TelegramMessage.query.count()
+
+        # Get paginated messages
+        pagination = TelegramMessage.query\
+            .order_by(TelegramMessage.timestamp.desc())\
+            .paginate(page=page, per_page=per_page)
+
+        logger.info(f"Retrieved {len(pagination.items)} messages from database (page {page})")
+        return render_template('index.html', 
+                             messages=pagination.items,
+                             pagination=pagination,
+                             total_messages=total_messages)
     except Exception as e:
         logger.error(f"Error fetching messages: {e}")
-        return f"Error loading messages: {str(e)}", 500
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/status')
+def status():
+    try:
+        from models import TelegramMessage
+        message_count = TelegramMessage.query.count()
+        latest_message = TelegramMessage.query\
+            .order_by(TelegramMessage.timestamp.desc())\
+            .first()
+
+        return jsonify({
+            'status': 'healthy',
+            'total_messages': message_count,
+            'latest_message_time': latest_message.timestamp.isoformat() if latest_message else None
+        })
+    except Exception as e:
+        logger.error(f"Error checking status: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('0.0.0.0', port))
+            return False
+        except socket.error:
+            return True
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = 5000
+    retries = 3
+
+    while retries > 0 and is_port_in_use(port):
+        logger.warning(f"Port {port} is in use, waiting 5 seconds before retry...")
+        import time
+        time.sleep(5)
+        retries -= 1
+
+    if is_port_in_use(port):
+        logger.error(f"Could not bind to port {port} after {3-retries} retries")
+        import sys
+        sys.exit(1)
+
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -21,10 +21,6 @@ args = "Flask API and Telegram Collector"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Telegram Collector"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Flask Server"
 
 [[workflows.workflow]]
@@ -41,20 +37,6 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Telegram Collector"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python telegram_client.py"
 
 [[workflows.workflow]]
 name = "Flask Server"
