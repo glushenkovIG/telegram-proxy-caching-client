@@ -14,4 +14,5 @@ dependencies = [
     "telethon>=1.39.0",
     "flask-limiter>=3.10.1",
     "sqlalchemy>=2.0.38",
+    "twilio>=9.4.6",
 ]
