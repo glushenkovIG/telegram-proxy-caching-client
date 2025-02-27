@@ -2,23 +2,11 @@ import os
 import logging
 from app import app, db
 from models import TelegramMessage
+from utils import should_be_ton_dev
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def should_be_ton_dev(channel_title):
-    if not channel_title:
-        return False
-
-    keywords = [
-        "ton dev", 
-        "ton development", 
-        "开发",  # Chinese
-        "developers",
-        "telegram developers"
-    ]
-    return any(keyword.lower() in channel_title.lower() for keyword in keywords)
 
 def update_labels():
     with app.app_context():
@@ -30,12 +18,13 @@ def update_labels():
             update_count = 0
             for message in messages:
                 try:
-                    # Apply the same logic as in collector.py
+                    # Use the shared logic from utils.py
                     new_is_ton_dev = should_be_ton_dev(message.channel_title)
 
                     if message.is_ton_dev != new_is_ton_dev:
                         message.is_ton_dev = new_is_ton_dev
                         update_count += 1
+                        logger.info(f"Updated label for message in channel: {message.channel_title} to {new_is_ton_dev}")
 
                         if update_count % 100 == 0:
                             logger.info(f"Updated {update_count} messages so far")

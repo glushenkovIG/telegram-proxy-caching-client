@@ -21,7 +21,7 @@ args = "Flask API and Telegram Collector"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Update Labels"
+args = "Run Tests"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -59,7 +59,7 @@ task = "shell.exec"
 args = "python main.py"
 
 [[workflows.workflow]]
-name = "Update Labels"
+name = "Run Tests"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -70,7 +70,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python update_labels.py"
+args = "python run_tests.py"
 
 [[workflows.workflow]]
 name = "Flask Server"

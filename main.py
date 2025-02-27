@@ -2,6 +2,7 @@ import threading
 import os
 import time
 import logging
+from app import app
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

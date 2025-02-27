@@ -16,4 +16,6 @@ dependencies = [
     "sqlalchemy>=2.0.38",
     "twilio>=9.4.6",
     "tqdm>=4.67.1",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
 ]
