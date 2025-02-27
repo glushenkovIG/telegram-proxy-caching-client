@@ -1,6 +1,6 @@
 import logging
 from telethon import TelegramClient, events
-from app import db
+from app import db, app
 from models import TelegramMessage
 from config import Config
 
@@ -54,34 +54,41 @@ class TelegramCollector:
                     logger.error(f"Authentication error: {auth_error}")
                     return
 
+            # Only process messages from our target
             @self.client.on(events.NewMessage())
             async def message_handler(event):
                 try:
-                    # Only process messages from our target
-                    if str(event.chat_id) != str(event.client.get_me().id):
+                    chat = await event.get_chat()
+
+                    # Only process messages from specified TON channels
+                    if not hasattr(chat, 'title') or not any(channel in chat.title for channel in Config.TON_CHANNELS):
                         return
 
-                    message = TelegramMessage(
-                        message_id=event.message.id,
-                        channel_id=str(event.chat_id),
-                        channel_title="Saved Messages",
-                        sender_id=str(event.sender_id) if event.sender_id else None,
-                        sender_username=None,
-                        content=event.message.text,
-                        timestamp=event.message.date
-                    )
+                    sender = await event.get_sender()
 
-                    db.session.add(message)
-                    db.session.commit()
-                    logger.info(f"Stored message {message.message_id}")
+                    # Save to database with app context
+                    with app.app_context():
+                        message = TelegramMessage(
+                            message_id=event.message.id,
+                            channel_id=str(event.chat_id),
+                            channel_title=chat.title,
+                            sender_id=str(sender.id) if sender else None,
+                            sender_username=sender.username if sender else None,
+                            content=event.message.text,
+                            timestamp=event.message.date
+                        )
+                        db.session.add(message)
+                        db.session.commit()
+                        logger.info(f"Stored message {message.message_id}")
 
                 except Exception as e:
                     logger.error(f"Error processing message: {e}")
-                    db.session.rollback()
+                    if 'db' in locals():
+                        db.session.rollback()
 
             print("\n" + "="*50)
             print("TELEGRAM COLLECTOR RUNNING")
-            print("Messages from Saved Messages will be collected")
+            print("Messages from TON channels will be collected")
             print("="*50 + "\n")
 
             await self.client.run_until_disconnected()
