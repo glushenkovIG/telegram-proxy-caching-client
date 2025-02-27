@@ -6,6 +6,19 @@ class Config:
     TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH', '7a005c82feee57d782a7e2f8399ddaf6')
     TELEGRAM_PHONE = os.environ.get('TELEGRAM_PHONE', '+41762636496')
 
+    # Target TON dev channels
+    TON_CHANNELS = [
+        'TON Dev News',
+        'TON Developers Community',
+        'TON Society Chat',
+        'TON Dev Chat',
+        'TON Data Hub Chat',
+        'TON Community',
+        'TON Tact Language Chat',
+        'TON Research',
+        'TON Status'
+    ]
+
     # Target folder for Telegram messages (using Saved Messages for testing)
     TARGET_FOLDER = 'me'  # This will target Saved Messages folder
 

@@ -3,8 +3,6 @@ import logging
 import sys
 from telethon import TelegramClient, events
 from config import Config
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -13,33 +11,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize database
-db = SQLAlchemy()
-
-class TelegramMessage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    message_id = db.Column(db.Integer, nullable=False)
-    channel_id = db.Column(db.String(100), nullable=False)
-    channel_title = db.Column(db.String(200))
-    sender_id = db.Column(db.String(100))
-    sender_username = db.Column(db.String(100))
-    content = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-# Create Flask app just for database
-from flask import Flask
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db.init_app(app)
-
 async def main():
     try:
-        # Create database tables
-        with app.app_context():
-            db.create_all()
-            logger.info("Database tables created")
-
         # Create the client
         client = TelegramClient('ton_collector_session',
                               Config.TELEGRAM_API_ID,
@@ -52,36 +25,39 @@ async def main():
         await client.connect()
 
         if not await client.is_user_authorized():
+            print("\n" + "="*50)
+            print("TELEGRAM AUTHENTICATION REQUIRED")
+            print("="*50)
+
+            # Request verification code
+            await client.send_code_request(Config.TELEGRAM_PHONE)
+            print(f"\n>>> Code sent to {Config.TELEGRAM_PHONE}")
+            print(">>> Please enter the code below:")
+            code = input(">>> Code: ")
+
             try:
-                print("\n" + "="*50)
-                print("TELEGRAM AUTHENTICATION REQUIRED")
-                print("="*50)
-
-                await client.send_code_request(Config.TELEGRAM_PHONE)
-                print(f"\n>>> A verification code has been sent to {Config.TELEGRAM_PHONE}")
-                code = input(">>> Enter the verification code here: ")
-
-                try:
-                    await client.sign_in(Config.TELEGRAM_PHONE, code)
-                except Exception as e:
-                    if "2FA" in str(e) or "password" in str(e).lower():
-                        print("\n" + "="*50)
-                        print("TWO-FACTOR AUTHENTICATION REQUIRED")
-                        print("="*50)
-                        password = input(">>> Please enter your 2FA password: ")
-                        await client.sign_in(password=password)
-                    else:
-                        raise e
-
-            except Exception as auth_error:
-                logger.error(f"Authentication error: {auth_error}")
-                return
+                await client.sign_in(Config.TELEGRAM_PHONE, code)
+            except Exception as e:
+                if "2FA" in str(e) or "password" in str(e).lower():
+                    print("\n" + "="*50)
+                    print("TWO-FACTOR AUTHENTICATION REQUIRED")
+                    print("="*50)
+                    password = input(">>> 2FA Password: ")
+                    await client.sign_in(password=password)
+                else:
+                    raise e
 
         print("\nSuccessfully connected to Telegram!")
 
-        # Get all dialogs
+        # Get all dialogs and filter TON-related ones
+        print("\nFetching TON development channels...")
         dialogs = await client.get_dialogs()
-        ton_channels = [d for d in dialogs if d.name and ("TON" in d.name or "ton" in d.name)]
+        ton_channels = [d for d in dialogs if d.name and any(channel in d.name for channel in Config.TON_CHANNELS)]
+
+        if not ton_channels:
+            print("No TON development channels found! Please make sure you have access to these channels.")
+            print("Required channels:", ", ".join(Config.TON_CHANNELS))
+            return
 
         print("\nMonitoring the following TON channels:")
         for channel in ton_channels:
@@ -92,25 +68,11 @@ async def main():
             try:
                 chat = await event.get_chat()
 
-                # Only process messages from TON-related channels
-                if not hasattr(chat, 'title') or not ('TON' in chat.title or 'ton' in chat.title):
+                # Only process messages from specified TON channels
+                if not hasattr(chat, 'title') or not any(channel in chat.title for channel in Config.TON_CHANNELS):
                     return
 
                 sender = await event.get_sender()
-
-                # Save to database
-                with app.app_context():
-                    message = TelegramMessage(
-                        message_id=event.message.id,
-                        channel_id=str(event.chat_id),
-                        channel_title=chat.title,
-                        sender_id=str(sender.id) if sender else None,
-                        sender_username=sender.username if sender else None,
-                        content=event.message.text,
-                        timestamp=event.message.date
-                    )
-                    db.session.add(message)
-                    db.session.commit()
 
                 # Print to console
                 print("\n" + "="*50)
@@ -123,12 +85,10 @@ async def main():
 
             except Exception as e:
                 logger.error(f"Error handling message: {e}")
-                if 'db' in locals():
-                    db.session.rollback()
 
         print("\n" + "="*50)
         print("TELEGRAM COLLECTOR RUNNING")
-        print("Monitoring TON-related channels")
+        print("Monitoring TON development channels")
         print("="*50 + "\n")
 
         await client.run_until_disconnected()
