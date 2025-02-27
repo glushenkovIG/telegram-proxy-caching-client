@@ -45,55 +45,21 @@ class TelegramCollector:
             print("Please enter that code when prompted")
             print("="*50 + "\n")
 
-            # This will automatically prompt for phone number if needed
-            await self.client.start()
+            # Start without bot token first
+            await self.client.connect()
 
             if not await self.client.is_user_authorized():
-                logger.error("Client not authorized. Please enter your phone number when prompted.")
-                return False
+                # Clear guidance for phone number input
+                print("\nPlease enter your phone number now:")
+                await self.client.start()
 
             self.is_connected = True
-            logger.info("Telegram collector started successfully")
+            logger.info("Successfully connected to Telegram")
 
             # Get channels from the target folder
             if not await self.get_channels_from_folder():
                 logger.error("Failed to get channels from folder")
                 return False
-
-            # Start collecting historical messages
-            for channel in self.target_channels:
-                logger.info(f"Fetching history from {channel.title}")
-                await self.fetch_history(channel, limit=100)
-
-            # Set up event handler for new messages
-            @self.client.on(events.NewMessage)
-            async def handle_new_message(event):
-                try:
-                    chat = await event.get_chat()
-
-                    # Only process messages from channels in our target folder
-                    if chat not in self.target_channels:
-                        return
-
-                    sender = await event.get_sender()
-
-                    if event.message.text:  # Only store text messages
-                        message = TelegramMessage(
-                            message_id=event.message.id,
-                            channel_id=str(chat.id),
-                            channel_title=chat.title if isinstance(chat, Channel) else None,
-                            sender_id=str(sender.id) if sender else None,
-                            sender_username=sender.username if sender else None,
-                            content=event.message.text,
-                        )
-
-                        db.session.add(message)
-                        db.session.commit()
-                        logger.info(f"Stored new message from {message.channel_title}")
-
-                except Exception as e:
-                    logger.error(f"Error processing message: {str(e)}")
-                    db.session.rollback()
 
             return True
 
