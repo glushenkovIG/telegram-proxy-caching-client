@@ -39,7 +39,10 @@ class TelegramCollector:
         try:
             print("\n" + "="*50)
             print("Starting Telegram Authentication Process")
-            print("Please watch for the phone number prompt below")
+            print("Please enter your phone number in international format")
+            print("Example: +1234567890")
+            print("After entering your phone number, you'll receive a code")
+            print("Please enter that code when prompted")
             print("="*50 + "\n")
 
             # This will automatically prompt for phone number if needed
