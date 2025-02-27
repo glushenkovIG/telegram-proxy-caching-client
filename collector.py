@@ -52,69 +52,85 @@ async def collect_messages():
         return
         
     try:
-        # Get channels
-        channels = []
+        # Collect all dialogs without pre-filtering
+        logger.info("Getting all dialogs without pre-filtering")
         try:
-            # First attempt to get channels directly from Config.TON_CHANNELS
-            logger.info("Trying to fetch channels from configured list")
-            for channel_title in Config.TON_CHANNELS:
-                try:
-                    entity = await client.get_entity(channel_title)
-                    if hasattr(entity, 'id') and hasattr(entity, 'title'):
-                        channels.append(entity)
-                        logger.info(f"Successfully added channel: {entity.title}")
-                except Exception as e:
-                    logger.error(f"Error getting entity for {channel_title}: {str(e)}")
+            # Collect recent messages from all dialogs
+            dialogs = await client.get_dialogs(limit=100)
             
-            # If no channels found, try an alternative approach
-            if not channels:
-                logger.info("No channels found from config list, trying dialogs method")
+            # Store all dialogs, not just channels
+            all_dialogs = []
+            if isinstance(dialogs, list):
+                all_dialogs = dialogs
+                logger.info(f"Found {len(all_dialogs)} total dialogs")
+            else:
+                logger.warning(f"Dialogs object isn't a list, type: {type(dialogs)}")
+                # Try to get individual dialogs instead
                 try:
-                    # Try to get channels using a safer method
-                    dialogs = await client.get_dialogs(limit=50)  # Limit to reduce rate limiting issues
-                    
-                    # Ensure we have a proper iterable
-                    if isinstance(dialogs, list):
-                        for dialog in dialogs:
-                            if hasattr(dialog, 'is_channel') and dialog.is_channel:
-                                channels.append(dialog)
-                                logger.info(f"Added channel from dialogs: {dialog.title}")
-                    else:
-                        logger.warning(f"Dialogs object isn't a list, type: {type(dialogs)}")
-                except Exception as dialog_err:
-                    logger.error(f"Error iterating dialogs: {str(dialog_err)}")
+                    entities = []
+                    for entity_id in [
+                        # Add some known entities by ID to try
+                        "tonblockchain", "tondev", "toncoin"
+                    ]:
+                        try:
+                            entity = await client.get_entity(entity_id)
+                            entities.append(entity)
+                            logger.info(f"Added entity: {getattr(entity, 'title', entity_id)}")
+                        except Exception as e:
+                            logger.error(f"Error getting entity {entity_id}: {str(e)}")
+                    all_dialogs = entities
+                except Exception as e:
+                    logger.error(f"Error getting individual entities: {str(e)}")
+                    all_dialogs = []
         except Exception as e:
-            logger.error(f"Error getting channels: {str(e)}")
+            logger.error(f"Error getting dialogs: {str(e)}")
+            all_dialogs = []
+            
+        logger.info(f"Processing {len(all_dialogs)} dialogs")
         
-        logger.info(f"Found {len(channels)} channels")
-        
-        for channel in channels:
+        # Process all dialogs, not just channels
+        for dialog in all_dialogs:
             try:
+                dialog_id = getattr(dialog, 'id', None)
+                dialog_title = getattr(dialog, 'title', str(dialog_id))
+                
+                if not dialog_id:
+                    logger.warning(f"Dialog missing ID, skipping: {dialog}")
+                    continue
+                
+                logger.info(f"Processing dialog: {dialog_title}")
+                
                 with app.app_context():
                     # Check latest stored message
                     latest_msg = TelegramMessage.query.filter_by(
-                        channel_id=str(channel.id)
+                        channel_id=str(dialog_id)
                     ).order_by(TelegramMessage.message_id.desc()).first()
                     
                     latest_id = latest_msg.message_id if latest_msg else 0
                     
-                    logger.info(f"Checking channel {channel.title} for new messages after ID {latest_id}")
+                    logger.info(f"Checking {dialog_title} for new messages after ID {latest_id}")
                     
-                    # Get messages
-                    async for message in client.iter_messages(channel, min_id=latest_id):
+                    # Get recent messages (limit to avoid too many at once)
+                    message_count = 0
+                    async for message in client.iter_messages(dialog, limit=50, min_id=latest_id):
                         if message.text:
                             # Store message
                             with app.app_context():
                                 new_msg = TelegramMessage(
                                     message_id=message.id,
-                                    channel_id=str(channel.id),
-                                    channel_title=channel.title,
+                                    channel_id=str(dialog_id),
+                                    channel_title=dialog_title,
                                     content=message.text,
                                     timestamp=message.date
                                 )
                                 db.session.add(new_msg)
                                 db.session.commit()
-                            logger.info(f"Saved message {message.id} from {channel.title}")
+                            message_count += 1
+                            if message_count % 10 == 0:
+                                logger.info(f"Saved {message_count} messages from {dialog_title}")
+                    
+                    if message_count > 0:
+                        logger.info(f"Total saved {message_count} messages from {dialog_title}")
             except Exception as e:
                 logger.error(f"Error processing channel {channel.title}: {str(e)}")
                 continue
@@ -127,7 +143,8 @@ async def collect_messages():
 
 async def main():
     backoff_time = 60  # Start with 60 seconds
-    max_backoff = 900  # Max 15 minutes
+    max_backoff = 1800  # Max 30 minutes
+    consecutive_errors = 0
     
     while True:
         try:
@@ -136,13 +153,18 @@ async def main():
             logger.info(f"Collection complete. Waiting {backoff_time} seconds before next collection...")
             # Reset backoff on success
             backoff_time = 60
+            consecutive_errors = 0
             await asyncio.sleep(backoff_time)
         except Exception as e:
-            logger.error(f"Error in main loop: {str(e)}")
-            # Implement exponential backoff to avoid rate limits
+            consecutive_errors += 1
+            logger.error(f"Error in main loop ({consecutive_errors} in a row): {str(e)}")
+            
+            # Increase backoff time with consecutive errors
+            if consecutive_errors > 1:
+                backoff_time = min(backoff_time * 2, max_backoff)
+            
             logger.info(f"Backing off for {backoff_time} seconds...")
             await asyncio.sleep(backoff_time)
-            backoff_time = min(backoff_time * 2, max_backoff)
 
 if __name__ == "__main__":
     asyncio.run(main())
