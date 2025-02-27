@@ -1,8 +1,7 @@
 import asyncio
 import logging
-import os
 from telethon import TelegramClient, events
-from telethon.errors import SessionPasswordNeededError
+from telethon.tl.types import Channel, Folder
 from app import db
 from models import TelegramMessage
 from config import Config
@@ -13,62 +12,60 @@ logger = logging.getLogger(__name__)
 
 class TelegramCollector:
     def __init__(self):
-        # Create a new Telegram client
-        self.client = TelegramClient(
-            'ton_collector_session',
-            Config.TELEGRAM_API_ID,
-            Config.TELEGRAM_API_HASH,
-            system_version="4.16.30-vxCUSTOM"
-        )
+        self.client = TelegramClient('ton_collector_session',
+                                   Config.TELEGRAM_API_ID,
+                                   Config.TELEGRAM_API_HASH,
+                                   system_version="4.16.30-vxCUSTOM")  # Set a custom system version
         self.is_connected = False
+        self.target_channels = set()
+
+    async def get_channels_from_folder(self):
+        """Get all channels from the specified folder."""
+        try:
+            dialogs = await self.client.get_dialogs()
+            for dialog in dialogs:
+                if dialog.folder and dialog.folder.title == Config.TARGET_FOLDER:
+                    if isinstance(dialog.entity, Channel):
+                        self.target_channels.add(dialog.entity)
+                        logger.info(f"Found channel in target folder: {dialog.entity.title}")
+
+            logger.info(f"Found {len(self.target_channels)} channels in {Config.TARGET_FOLDER} folder")
+            return True
+        except Exception as e:
+            logger.error(f"Error getting channels from folder: {str(e)}")
+            return False
 
     async def start(self):
         try:
-            logger.info("Starting Telegram Authentication Process")
+            print("\n" + "="*50)
+            print("Starting Telegram Authentication Process")
+            print("Please enter your phone number in international format")
+            print("Example: +1234567890")
+            print("After entering your phone number, you'll receive a code")
+            print("Please enter that code when prompted")
+            print("="*50 + "\n")
 
-            # Start the client
-            await self.client.connect()
+            # Clear guidance for phone number input
+            print("\nPlease enter your phone number now:")
+            await self.client.start()
 
             if not await self.client.is_user_authorized():
-                if not Config.TELEGRAM_PHONE:
-                    logger.error("TELEGRAM_PHONE environment variable is not set")
-                    print("Please set the TELEGRAM_PHONE environment variable in Replit Secrets")
-                    return False
-
-                logger.info(f"Using phone number from config: {Config.TELEGRAM_PHONE}")
-                # Request code to be sent to the phone
-                await self.client.send_code_request(Config.TELEGRAM_PHONE)
-
-                # Note: For Replit deployment, we need a way to get the verification code
-                # Let's provide a URL where the user can enter the code
-                print("\n" + "="*50)
-                print("A verification code has been sent to your phone.")
-                print("Please set the TELEGRAM_CODE environment variable in Replit Secrets")
-                print("with the code you received, then restart this Repl.")
-                print("="*50 + "\n")
-
-                # Check if code is in environment variables
-                if 'TELEGRAM_CODE' in os.environ and os.environ.get('TELEGRAM_CODE'):
-                    code = os.environ.get('TELEGRAM_CODE')
-                    try:
-                        await self.client.sign_in(Config.TELEGRAM_PHONE, code)
-                    except SessionPasswordNeededError:
-                        # 2FA is enabled
-                        if 'TELEGRAM_PASSWORD' in os.environ and os.environ.get('TELEGRAM_PASSWORD'):
-                            await self.client.sign_in(password=os.environ.get('TELEGRAM_PASSWORD'))
-                        else:
-                            print("Two-factor authentication is enabled.")
-                            print("Please set the TELEGRAM_PASSWORD environment variable in Replit Secrets")
-                            return False
-                else:
-                    print("Waiting for TELEGRAM_CODE to be set...")
-                    return False
+                logger.error("Client not authorized. Please enter your phone number when prompted")
+                return False
 
             self.is_connected = True
             logger.info("Successfully connected to Telegram")
+
+            # Get channels from the target folder
+            if not await self.get_channels_from_folder():
+                logger.error("Failed to get channels from folder")
+                return False
+
             return True
+
         except Exception as e:
-            logger.error(f"Error connecting to Telegram: {str(e)}")
+            logger.error(f"Error starting Telegram collector: {str(e)}")
+            self.is_connected = False
             return False
 
     async def fetch_history(self, channel, limit=100):
