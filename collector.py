@@ -53,8 +53,25 @@ async def collect_messages():
         
     try:
         # Get channels
-        dialogs = await client.get_dialogs()
-        channels = [d for d in dialogs if d.is_channel]
+        try:
+            dialogs = await client.get_dialogs()
+            # Make sure dialogs is actually iterable before proceeding
+            if hasattr(dialogs, '__iter__'):
+                channels = [d for d in dialogs if d.is_channel]
+            else:
+                logger.error(f"Dialogs object is not iterable: {type(dialogs)}")
+                # Try alternative approach to get channels
+                channels = []
+                for channel_title in Config.TON_CHANNELS:
+                    try:
+                        entity = await client.get_entity(channel_title)
+                        if hasattr(entity, 'id') and hasattr(entity, 'title'):
+                            channels.append(entity)
+                    except Exception as e:
+                        logger.error(f"Error getting entity for {channel_title}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error getting dialogs: {str(e)}")
+            channels = []
         
         logger.info(f"Found {len(channels)} channels")
         
