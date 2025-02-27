@@ -6,7 +6,8 @@ from config import Config
 from app import app, db, TelegramMessage
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO,
+                   format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Initialize client
@@ -24,7 +25,10 @@ async def handle_message(event):
         chat = await event.get_chat()
         chat_title = getattr(chat, 'title', None)
 
-        # Store message in database
+        # Log message receipt
+        logger.info(f"Received message from: {chat_title}")
+
+        # Store in database
         with app.app_context():
             message = TelegramMessage(
                 message_id=event.message.id,
@@ -36,6 +40,7 @@ async def handle_message(event):
             )
             db.session.add(message)
             db.session.commit()
+            logger.info(f"Stored message {message.id} from {chat_title}")
 
         # Show TON dev messages in console
         if chat_title in Config.TON_CHANNELS:
@@ -45,7 +50,7 @@ async def handle_message(event):
             pbar.update(1)
 
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error handling message: {str(e)}")
 
 async def main():
     """Main collector function"""

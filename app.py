@@ -16,6 +16,8 @@ db = SQLAlchemy(app)
 
 # Message model
 class TelegramMessage(db.Model):
+    __tablename__ = 'telegram_messages'  # Explicitly set table name
+
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, nullable=False)
     channel_id = db.Column(db.String(100), nullable=False)
@@ -26,12 +28,13 @@ class TelegramMessage(db.Model):
 
 # Create tables
 with app.app_context():
+    db.drop_all()  # Reset tables since we've had schema issues
     db.create_all()
 
 # Simple route to test
 @app.route('/')
 def index():
-    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(10).all()
+    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).all()
     return render_template('index.html', messages=messages)
 
 if __name__ == "__main__":
