@@ -1,23 +1,25 @@
 import logging
 from telethon import TelegramClient, events
-from tqdm import tqdm
 from config import Config
 from app import app, db, TelegramMessage
 
 # Set up logging
-logging.basicConfig(level=logging.INFO,
-                   format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Initialize client using existing session
+# Initialize client with existing session
 client = TelegramClient('ton_collector_session', 
                        Config.TELEGRAM_API_ID,
                        Config.TELEGRAM_API_HASH)
 
 @client.on(events.NewMessage)
 async def handle_message(event):
-    """Handle and store new messages"""
+    """Handle incoming messages"""
     try:
+        # Get message details
         chat = await event.get_chat()
         chat_title = getattr(chat, 'title', None)
 
@@ -44,11 +46,11 @@ async def handle_message(event):
 async def main():
     """Main collector function"""
     try:
-        print("Starting collector...")
+        logger.info("Starting collector using existing session...")
         await client.start()
         me = await client.get_me()
-        print(f"Connected as: {me.username}")
-        print("Listening for messages...")
+        logger.info(f"Connected as: {me.username}")
+        logger.info("Listening for messages...")
         await client.run_until_disconnected()
     except Exception as e:
         logger.error(f"Error: {str(e)}")

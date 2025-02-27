@@ -29,12 +29,15 @@ class TelegramMessage(db.Model):
 # Create tables
 with app.app_context():
     db.create_all()
-    print("Database initialized")
+    print("Database tables created successfully")
 
 @app.route('/')
 def index():
-    # Just return a simple message for now
-    return "Telegram collector is running"
+    try:
+        count = TelegramMessage.query.count()
+        return f"Server running. Total messages: {count}"
+    except Exception as e:
+        return f"Database error: {str(e)}", 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=8080)

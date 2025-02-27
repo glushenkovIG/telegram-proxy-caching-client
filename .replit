@@ -21,15 +21,15 @@ args = "Flask API and Telegram Collector"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Telegram Collector"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Telegram Client"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask Server"
 
 [[workflows.workflow]]
 name = "Flask API and Telegram Collector"
@@ -44,21 +44,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python app.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -96,6 +81,21 @@ author = 36288906
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python app.py"
+
+[[workflows.workflow]]
+name = "Flask Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+waitForPort = 8080
 
 [[ports]]
 localPort = 5000
