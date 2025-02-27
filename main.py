@@ -1,12 +1,18 @@
 import asyncio
 import threading
 import logging
+import os
 from app import create_app
 from telegram_client import TelegramCollector
+from config import Config
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Check for required environment variables
+if not Config.TELEGRAM_PHONE:
+    logger.warning("TELEGRAM_PHONE environment variable not set. Please add it in Replit Secrets.")
 
 def run_flask():
     app = create_app()
