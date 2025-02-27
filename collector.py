@@ -27,11 +27,11 @@ async def handle_message(event):
 
         # Log message receipt
         logger.info(f"Received message from: {chat_title}")
-        
+
         # Store in database
         try:
             with app.app_context():
-                print(f"Adding message to database from: {chat_title}")
+                print(f"Processing message from {chat_title}: {event.message.id}")
                 message = TelegramMessage(
                     message_id=event.message.id,
                     channel_id=str(chat.id),
@@ -42,10 +42,10 @@ async def handle_message(event):
                 )
                 db.session.add(message)
                 db.session.commit()
-                print(f"Successfully stored message {message.id} from {chat_title}")
+                print(f"SUCCESS: Stored message {message.id} from {chat_title}")
                 logger.info(f"Stored message {message.id} from {chat_title}")
         except Exception as e:
-            print(f"Database error: {str(e)}")
+            print(f"DATABASE ERROR: Failed to store message: {str(e)}")
             logger.error(f"Failed to store message: {str(e)}")
 
         # Show TON dev messages in console
@@ -67,21 +67,21 @@ async def main():
         print(f"Connected as: {me.username}")
         print("\nMonitoring channels...")
         
-        # Add heartbeat to show collector is still running
+        # Add heartbeat to show collector is active
         import asyncio
         
         async def heartbeat():
             count = 0
             while True:
                 count += 1
-                print(f"Collector heartbeat #{count}: Still monitoring channels...")
+                print(f"Collector heartbeat #{count}: Still alive and monitoring channels...")
                 try:
                     # Check database connection
                     with app.app_context():
                         msg_count = TelegramMessage.query.count()
-                        print(f"Current message count in database: {msg_count}")
+                        print(f"Database check: Current message count: {msg_count}")
                 except Exception as e:
-                    print(f"Database check error: {str(e)}")
+                    print(f"Database heartbeat ERROR: {str(e)}")
                 await asyncio.sleep(60)  # Heartbeat every minute
                 
         # Start heartbeat in background
@@ -90,6 +90,7 @@ async def main():
         await client.run_until_disconnected()
     except Exception as e:
         logger.error(f"Error: {str(e)}")
+        print(f"CRITICAL ERROR: {str(e)}")
     finally:
         await client.disconnect()
 

@@ -28,15 +28,13 @@ class TelegramMessage(db.Model):
 
 # Create tables
 with app.app_context():
-    # Only create tables if they don't exist, don't reset data
     # db.drop_all()  # Commented out to preserve existing data
     db.create_all()
-    # Check if we can connect and count messages
     try:
-        count = TelegramMessage.query.count()
-        print(f"Database connected successfully. Current message count: {count}")
+        msg_count = TelegramMessage.query.count()
+        print(f"Database connected successfully. Current message count: {msg_count}")
     except Exception as e:
-        print(f"Database connection error: {str(e)}")
+        print(f"Database connection error on startup: {str(e)}")
 
 # Simple route to test
 @app.route('/')
@@ -45,4 +43,4 @@ def index():
     return render_template('index.html', messages=messages)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
