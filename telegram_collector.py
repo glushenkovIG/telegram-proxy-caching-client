@@ -66,6 +66,55 @@ async def handle_message(event):
         if 'session' in locals():
             session.close()
 
+async def collect_history():
+    """Collect historical messages from TON channels"""
+    try:
+        print("\nFetching TON development channels...")
+        dialogs = await client.get_dialogs()
+        ton_channels = [d for d in dialogs if d.name and any(channel in d.name for channel in Config.TON_CHANNELS)]
+
+        total_messages = 0
+        session = Session()
+
+        for channel in ton_channels:
+            print(f"\nCollecting messages from: {channel.name}")
+            messages = await client.get_messages(channel, limit=None)  # None means all messages
+
+            for msg in messages:
+                if not msg.raw_text:  # Skip non-text messages
+                    continue
+
+                try:
+                    message = Message(
+                        sender_id=str(msg.sender_id) if msg.sender_id else None,
+                        chat_id=str(channel.id),
+                        message_text=msg.raw_text,
+                        timestamp=msg.date
+                    )
+                    session.add(message)
+                    total_messages += 1
+
+                    if total_messages % 100 == 0:  # Commit every 100 messages
+                        session.commit()
+                        print(f"Saved {total_messages} messages so far...")
+
+                except Exception as e:
+                    logger.error(f"Error saving message: {e}")
+                    session.rollback()
+
+            session.commit()  # Final commit for this channel
+            print(f"Finished collecting from {channel.name}")
+
+        print(f"\nTotal historical messages collected: {total_messages}")
+
+    except Exception as e:
+        logger.error(f"Error collecting history: {e}")
+        if 'session' in locals():
+            session.rollback()
+    finally:
+        if 'session' in locals():
+            session.close()
+
 async def main():
     """Main function to run the client"""
     try:
@@ -86,7 +135,12 @@ async def main():
                     raise e
 
         print("Connected successfully!")
-        print("Listening for incoming messages...")
+
+        # First collect historical messages
+        await collect_history()
+
+        # Then start listening for new messages
+        print("\nNow listening for new messages...")
         await client.run_until_disconnected()
 
     except Exception as e:
