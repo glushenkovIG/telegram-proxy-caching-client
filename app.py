@@ -27,23 +27,28 @@ def create_app():
         "pool_pre_ping": True,
     }
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
+    app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
     # Initialize extensions
     db.init_app(app)
     limiter.init_app(app)
 
     with app.app_context():
-        # Make sure to import the models here or their tables won't be created
-        import models  # noqa: F401
+        # Import routes
+        from routes import bp as main_blueprint
+        app.register_blueprint(main_blueprint)
 
+        # Import models for table creation
+        from models import TelegramMessage
+
+        # Create tables
         db.create_all()
         logger.info("Database tables created successfully")
 
-        # Register blueprints
-        from routes import bp as main_blueprint
-        from api import api as api_blueprint
-        app.register_blueprint(main_blueprint)
-        app.register_blueprint(api_blueprint, url_prefix='/api')
-
     return app
+
+# Create the app instance
+app = create_app()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)

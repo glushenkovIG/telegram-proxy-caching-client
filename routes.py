@@ -19,12 +19,9 @@ def index():
         page=page, per_page=per_page
     )
 
-    total_messages = TelegramMessage.query.count()
-
     return render_template('index.html', 
                          messages=pagination.items,
-                         pagination=pagination,
-                         total_messages=total_messages)
+                         pagination=pagination)
 
 @bp.route('/status')
 def status():
