@@ -2,21 +2,17 @@ import os
 
 class Config:
     # Telegram API settings with hardcoded test values for development
-    TELEGRAM_API_ID = os.environ.get('TELEGRAM_API_ID') or '12345'  # Replace with your actual API ID
-    TELEGRAM_API_HASH = os.environ.get('TELEGRAM_API_HASH') or 'your-api-hash-here'  # Replace with your actual API Hash
-    TELEGRAM_PHONE = os.environ.get('TELEGRAM_PHONE')
+    TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID', '12345')  # Replace with your actual API ID
+    TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH', 'your-api-hash-here')  # Replace with your actual API Hash
+    TELEGRAM_PHONE = os.getenv('TELEGRAM_PHONE', '')
 
-    # Target TON dev channels
+    # List of channel usernames or IDs to monitor
+    # Add the channels you want to monitor here
     TON_CHANNELS = [
-        'TON Dev News',
-        'TON Developers Community',
-        'TON Society Chat',
-        'TON Dev Chat',
-        'TON Data Hub Chat',
-        'TON Community',
-        'TON Tact Language Chat',
-        'TON Research',
-        'TON Status'
+        'tonblockchain',
+        'tondev', 
+        'toncoin',
+        # Add more channels as needed
     ]
 
     # Target folder for Telegram messages (using Saved Messages for testing)

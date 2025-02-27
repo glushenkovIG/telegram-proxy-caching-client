@@ -53,25 +53,38 @@ async def collect_messages():
         
     try:
         # Get channels
+        channels = []
         try:
-            dialogs = await client.get_dialogs()
-            # Make sure dialogs is actually iterable before proceeding
-            if hasattr(dialogs, '__iter__'):
-                channels = [d for d in dialogs if d.is_channel]
-            else:
-                logger.error(f"Dialogs object is not iterable: {type(dialogs)}")
-                # Try alternative approach to get channels
-                channels = []
-                for channel_title in Config.TON_CHANNELS:
-                    try:
-                        entity = await client.get_entity(channel_title)
-                        if hasattr(entity, 'id') and hasattr(entity, 'title'):
-                            channels.append(entity)
-                    except Exception as e:
-                        logger.error(f"Error getting entity for {channel_title}: {str(e)}")
+            # First attempt to get channels directly from Config.TON_CHANNELS
+            logger.info("Trying to fetch channels from configured list")
+            for channel_title in Config.TON_CHANNELS:
+                try:
+                    entity = await client.get_entity(channel_title)
+                    if hasattr(entity, 'id') and hasattr(entity, 'title'):
+                        channels.append(entity)
+                        logger.info(f"Successfully added channel: {entity.title}")
+                except Exception as e:
+                    logger.error(f"Error getting entity for {channel_title}: {str(e)}")
+            
+            # If no channels found, try an alternative approach
+            if not channels:
+                logger.info("No channels found from config list, trying dialogs method")
+                try:
+                    # Try to get channels using a safer method
+                    dialogs = await client.get_dialogs(limit=50)  # Limit to reduce rate limiting issues
+                    
+                    # Ensure we have a proper iterable
+                    if isinstance(dialogs, list):
+                        for dialog in dialogs:
+                            if hasattr(dialog, 'is_channel') and dialog.is_channel:
+                                channels.append(dialog)
+                                logger.info(f"Added channel from dialogs: {dialog.title}")
+                    else:
+                        logger.warning(f"Dialogs object isn't a list, type: {type(dialogs)}")
+                except Exception as dialog_err:
+                    logger.error(f"Error iterating dialogs: {str(dialog_err)}")
         except Exception as e:
-            logger.error(f"Error getting dialogs: {str(e)}")
-            channels = []
+            logger.error(f"Error getting channels: {str(e)}")
         
         logger.info(f"Found {len(channels)} channels")
         
@@ -113,14 +126,23 @@ async def collect_messages():
         logger.info("Client disconnected")
 
 async def main():
+    backoff_time = 60  # Start with 60 seconds
+    max_backoff = 900  # Max 15 minutes
+    
     while True:
         try:
+            logger.info(f"Starting message collection cycle...")
             await collect_messages()
-            logger.info("Waiting 60 seconds before next collection...")
-            await asyncio.sleep(60)
+            logger.info(f"Collection complete. Waiting {backoff_time} seconds before next collection...")
+            # Reset backoff on success
+            backoff_time = 60
+            await asyncio.sleep(backoff_time)
         except Exception as e:
             logger.error(f"Error in main loop: {str(e)}")
-            await asyncio.sleep(30)
+            # Implement exponential backoff to avoid rate limits
+            logger.info(f"Backing off for {backoff_time} seconds...")
+            await asyncio.sleep(backoff_time)
+            backoff_time = min(backoff_time * 2, max_backoff)
 
 if __name__ == "__main__":
     asyncio.run(main())
