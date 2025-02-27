@@ -1,5 +1,6 @@
+
 from flask import Blueprint, render_template, request, jsonify
-from app import app, db, TelegramMessage
+from app import db, TelegramMessage
 
 bp = Blueprint('main', __name__)
 
@@ -47,6 +48,7 @@ def status():
             'telegram_api_configured': api_id_set and api_hash_set
         })
     except Exception as e:
+        from app import app
         app.logger.error(f"Error checking status: {str(e)}")
         return jsonify({
             'status': 'error',

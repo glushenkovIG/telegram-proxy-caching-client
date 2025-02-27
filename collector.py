@@ -1,107 +1,101 @@
-import os
-import logging
-from telethon import TelegramClient, events
-from tqdm import tqdm
-from config import Config
-from app import app, db, TelegramMessage
 
-# Set up logging
-logging.basicConfig(level=logging.INFO,
-                   format='%(asctime)s - %(levelname)s - %(message)s')
+import os
+import asyncio
+import logging
+from telethon import TelegramClient
+from telethon.errors import SessionPasswordNeededError
+from datetime import datetime
+
+# Import after app, db, and model are fully initialized
+from app import db, TelegramMessage, app
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize client with existing session
-print("Using existing Telegram session file...")
-# Set dummy values for API credentials for session loading
-client = TelegramClient('ton_collector_session', 1, 'x')
-# Skip connecting with credentials since we're using existing session
+# Load config
+from config import Config
 
-# Track messages
-pbar = tqdm(desc="Messages", unit=" msgs")
-
-@client.on(events.NewMessage)
-async def handle_message(event):
-    """Handle and store new messages"""
+async def start_client():
     try:
-        chat = await event.get_chat()
-        chat_title = getattr(chat, 'title', None)
-
-        # Log message receipt
-        logger.info(f"Received message from: {chat_title}")
-
-        # Store in database
-        try:
-            with app.app_context():
-                print(f"Processing message from {chat_title}: {event.message.id}")
-                message = TelegramMessage(
-                    message_id=event.message.id,
-                    channel_id=str(chat.id),
-                    channel_title=chat_title,
-                    content=event.message.text,
-                    timestamp=event.message.date,
-                    is_ton_dev=chat_title in Config.TON_CHANNELS
-                )
-                db.session.add(message)
-                db.session.commit()
-                print(f"SUCCESS: Stored message {message.id} from {chat_title}")
-                logger.info(f"Stored message {message.id} from {chat_title}")
-        except Exception as e:
-            print(f"DATABASE ERROR: Failed to store message: {str(e)}")
-            logger.error(f"Failed to store message: {str(e)}")
-
-        # Show TON dev messages in console
-        if chat_title in Config.TON_CHANNELS:
-            print(f"\nTON Message from {chat_title}:")
-            print(f"Content: {event.message.text}")
-        else:
-            pbar.update(1)
-
-    except Exception as e:
-        logger.error(f"Error handling message: {str(e)}")
-
-async def main():
-    """Main collector function"""
-    try:
-        print("Starting collector with existing session...")
-        # Use existing session - don't prompt for phone code
+        # Use existing session
+        if os.path.exists('ton_collector_session.session'):
+            logger.info("Using existing session")
+            
+        client = TelegramClient('ton_collector_session', 
+                              Config.TELEGRAM_API_ID, 
+                              Config.TELEGRAM_API_HASH)
+        
         await client.connect()
-        
-        if await client.is_user_authorized():
-            me = await client.get_me()
-            print(f"Connected as: {me.username if me else 'Unknown'}")
-        else:
-            print("ERROR: Existing session is not authorized.")
-            print("Please run telegram_client.py first to create a valid session")
-            return
-        print("\nMonitoring channels...")
-        
-        # Add heartbeat to show collector is active
-        import asyncio
-        
-        async def heartbeat():
-            count = 0
-            while True:
-                count += 1
-                print(f"Collector heartbeat #{count}: Still alive and monitoring channels...")
-                try:
-                    # Check database connection
-                    with app.app_context():
-                        msg_count = TelegramMessage.query.count()
-                        print(f"Database check: Current message count: {msg_count}")
-                except Exception as e:
-                    print(f"Database heartbeat ERROR: {str(e)}")
-                await asyncio.sleep(60)  # Heartbeat every minute
-                
-        # Start heartbeat in background
-        asyncio.create_task(heartbeat())
-        
-        await client.run_until_disconnected()
+        # Check if user is already authorized
+        if not await client.is_user_authorized():
+            logger.error("Session unauthorized. Please run telegram_client.py first")
+            return None
+            
+        logger.info(f"Client connected successfully")
+        return client
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        print(f"CRITICAL ERROR: {str(e)}")
+        logger.error(f"Failed to initialize client: {str(e)}")
+        return None
+
+async def collect_messages():
+    client = await start_client()
+    if not client:
+        return
+        
+    try:
+        # Get channels
+        dialogs = await client.get_dialogs()
+        channels = [d for d in dialogs if d.is_channel]
+        
+        logger.info(f"Found {len(channels)} channels")
+        
+        for channel in channels:
+            try:
+                with app.app_context():
+                    # Check latest stored message
+                    latest_msg = TelegramMessage.query.filter_by(
+                        channel_id=str(channel.id)
+                    ).order_by(TelegramMessage.message_id.desc()).first()
+                    
+                    latest_id = latest_msg.message_id if latest_msg else 0
+                    
+                    logger.info(f"Checking channel {channel.title} for new messages after ID {latest_id}")
+                    
+                    # Get messages
+                    async for message in client.iter_messages(channel, min_id=latest_id):
+                        if message.text:
+                            # Store message
+                            with app.app_context():
+                                new_msg = TelegramMessage(
+                                    message_id=message.id,
+                                    channel_id=str(channel.id),
+                                    channel_title=channel.title,
+                                    content=message.text,
+                                    timestamp=message.date
+                                )
+                                db.session.add(new_msg)
+                                db.session.commit()
+                            logger.info(f"Saved message {message.id} from {channel.title}")
+            except Exception as e:
+                logger.error(f"Error processing channel {channel.title}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        logger.error(f"Error in collect_messages: {str(e)}")
     finally:
         await client.disconnect()
+        logger.info("Client disconnected")
+
+async def main():
+    while True:
+        try:
+            await collect_messages()
+            logger.info("Waiting 60 seconds before next collection...")
+            await asyncio.sleep(60)
+        except Exception as e:
+            logger.error(f"Error in main loop: {str(e)}")
+            await asyncio.sleep(30)
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
