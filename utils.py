@@ -28,6 +28,9 @@ def should_be_ton_dev(channel_title):
         'ton dev chat',
         'ton dev news',
         'ton dev chat (中文)',
+        'ton dev chat (en)',
+        'ton dev chat (py)',
+        'ton dev chat (ру)',
         'telegram developers community',
         'ton society chat',
         'ton data hub chat',
@@ -39,7 +42,8 @@ def should_be_ton_dev(channel_title):
         'ton status',
         'testnet ton status',
         'ton contests',
-        'botnews'
+        'botnews',
+        'the open network'
     ]
 
     for match in exact_matches:
