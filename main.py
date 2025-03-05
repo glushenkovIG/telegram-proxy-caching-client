@@ -108,6 +108,7 @@ async def collect_messages():
         for dialog in dialogs:
             try:
                 if not hasattr(dialog, 'id'):
+                    logger.warning("Skipping dialog without ID")
                     continue
 
                 channel_id = str(dialog.id)
@@ -121,20 +122,22 @@ async def collect_messages():
 
                 # Get latest message ID from database
                 with app.app_context():
+                    # Get most recent messages (increased limit for better coverage)
+                    message_limit = 20
+
                     latest_msg = TelegramMessage.query.filter_by(
                         channel_id=channel_id
                     ).order_by(TelegramMessage.message_id.desc()).first()
 
                     latest_id = latest_msg.message_id if latest_msg else 0
-
-                    # Get most recent messages
-                    message_limit = 10
+                    logger.info(f"Latest message ID in database for {channel_title}: {latest_id}")
 
                     # Process messages
+                    message_count = 0
                     async for message in client.iter_messages(dialog, limit=message_limit):
                         if message.id <= latest_id:
-                            logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
-                            break
+                            logger.info(f"Skipping message {message.id} in {channel_title} - already processed")
+                            continue  # Changed from break to continue to process more messages
 
                         if message.text:
                             try:
@@ -148,10 +151,13 @@ async def collect_messages():
                                 )
                                 db.session.add(new_msg)
                                 db.session.commit()
-                                logger.info(f"Saved message from {channel_title}")
+                                message_count += 1
+                                logger.info(f"Saved message {message.id} from {channel_title}")
                             except Exception as e:
                                 logger.error(f"Error saving message: {str(e)}")
                                 db.session.rollback()
+                    
+                    logger.info(f"Processed {message_count} new messages from {channel_title}")
 
             except Exception as e:
                 logger.error(f"Error processing dialog {getattr(dialog, 'title', 'unknown')}: {str(e)}")
@@ -173,8 +179,9 @@ async def collector_loop():
             logger.info("Collection complete, waiting 120 seconds...")
             await asyncio.sleep(120)  # Check every 2 minutes
         except Exception as e:
-            logger.error(f"Error in main loop: {str(e)}")
-            await asyncio.sleep(60)
+            logger.error(f"Error in main loop: {str(e)}", exc_info=True)
+            logger.info("Retrying collection in 30 seconds...")
+            await asyncio.sleep(30)  # Shorter retry on error
 
 # Function to start the collector in a separate thread
 def start_collector_thread():
@@ -248,11 +255,13 @@ if __name__ == "__main__":
     with app.app_context():
         # Use existing tables
         logger.info("Using existing database tables")
+        # Create tables if they don't exist
+        db.create_all()
 
     # Start collector in a separate thread
     logger.info("Starting simplified Telegram collector and server")
     collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
 
-    # Start Flask server on a different port to avoid conflicts
-    app.run(host="0.0.0.0", port=8080)
+    # Start Flask server on a specific port to avoid conflicts
+    app.run(host="0.0.0.0", port=8080, debug=False)
