@@ -267,11 +267,21 @@ def index():
         ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
         all_count = TelegramMessage.query.count()
     except Exception as e:
-        logger.error(f"Database error in index route: {str(e)}")
+        logger.error(f"Database error in index route: {str(e)}", exc_info=True)
         # If there's a database error, return empty data
         messages = []
         ton_count = 0
         all_count = 0
+        # Try to diagnose the issue
+        try:
+            inspector = db.inspect(db.engine)
+            tables = inspector.get_table_names()
+            logger.info(f"Current database tables: {tables}")
+            if 'telegram_messages' in tables:
+                columns = [col['name'] for col in inspector.get_columns('telegram_messages')]
+                logger.info(f"Telegram message columns: {columns}")
+        except Exception as diagnose_error:
+            logger.error(f"Error diagnosing database: {str(diagnose_error)}")
     
     return render_template('index.html', 
                           messages=messages, 
@@ -325,40 +335,30 @@ def database_info():
 # Run the application
 if __name__ == "__main__":
     with app.app_context():
-        # Check if using SQLite or PostgreSQL
-        is_sqlite = 'sqlite' in app.config["SQLALCHEMY_DATABASE_URI"]
-        
         try:
-            # Drop and recreate tables to ensure schema is up to date
-            logger.info("Recreating database tables to update schema")
-            if is_sqlite:
-                # SQLite is simpler to reset
-                db.drop_all()
-                db.create_all()
+            # NEVER recreate database, only add missing columns
+            logger.info("Checking database schema - NO RECREATION")
+            
+            # Check if table exists
+            inspector = db.inspect(db.engine)
+            if 'telegram_messages' in inspector.get_table_names():
+                # Check if columns exist
+                columns = [col['name'] for col in inspector.get_columns('telegram_messages')]
+                if 'is_outgoing' not in columns:
+                    # Alter the table to add the missing column
+                    logger.info("Adding is_outgoing column to existing table")
+                    with db.engine.connect() as conn:
+                        conn.execute(db.text("ALTER TABLE telegram_messages ADD COLUMN is_outgoing BOOLEAN DEFAULT FALSE"))
+                        conn.commit()
+                logger.info("Table already exists, schema check complete")
             else:
-                # For PostgreSQL, we need to be more careful
-                # First check if the table exists
-                inspector = db.inspect(db.engine)
-                if 'telegram_messages' in inspector.get_table_names():
-                    # Check if columns exist
-                    columns = [col['name'] for col in inspector.get_columns('telegram_messages')]
-                    if 'is_outgoing' not in columns:
-                        # Alter the table to add the missing column
-                        logger.info("Adding is_outgoing column to existing table")
-                        with db.engine.connect() as conn:
-                            conn.execute(db.text("ALTER TABLE telegram_messages ADD COLUMN is_outgoing BOOLEAN DEFAULT FALSE"))
-                            conn.commit()
-                    logger.info("Table already exists with correct schema")
-                else:
-                    # Create tables if they don't exist
-                    logger.info("Creating new tables")
-                    db.create_all()
+                # Only create tables if they don't exist at all
+                logger.info("Tables don't exist, creating initial schema")
+                db.create_all()
         except Exception as e:
-            logger.error(f"Error setting up database: {str(e)}")
-            # Fallback - recreate everything
-            logger.info("Error occurred, falling back to full recreation")
-            db.drop_all()
-            db.create_all()
+            logger.error(f"Error checking database schema: {str(e)}")
+            # Don't recreate anything on error
+            pass
 
     # Start collector in a separate thread
     logger.info("Starting simplified Telegram collector and server")
