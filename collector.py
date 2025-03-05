@@ -21,6 +21,15 @@ async def collect_messages():
     """Main collection function"""
     client = None
     try:
+        # Ensure tables are created
+        with app.app_context():
+            try:
+                db.create_all()
+                logger.info("Database tables created/verified")
+            except Exception as e:
+                logger.error(f"Error creating database tables: {str(e)}")
+                return
+                
         session_path = 'ton_collector_session.session'
         if not os.path.exists(session_path):
             logger.error("No session file found. Please run telegram_client.py first to authenticate.")

@@ -34,7 +34,7 @@ async def diagnose_database():
                                       TelegramMessage.channel_title, 
                                       db.func.count(TelegramMessage.id).label('count'),
                                       db.func.max(TelegramMessage.timestamp).label('latest'))\
-                               .group_by(TelegramMessage.channel_id)\
+                               .group_by(TelegramMessage.channel_id, TelegramMessage.channel_title)\
                                .all()
             
             print("\nChannel statistics:")
