@@ -68,6 +68,7 @@ async def collect_messages():
                         # Get new messages
                         async for message in client.iter_messages(dialog, limit=100):
                             if message.id <= latest_id:
+                                logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
                                 break
 
                             if message.text:
@@ -82,10 +83,12 @@ async def collect_messages():
                                     )
                                     db.session.add(new_msg)
                                     db.session.commit()
-                                    logger.info(f"Saved new message from {channel_title}")
+                                    logger.info(f"Saved new message {message.id} from {channel_title}")
                                 except Exception as e:
-                                    logger.error(f"Error saving message: {str(e)}")
+                                    logger.error(f"Error saving message {message.id} from {channel_title}: {str(e)}")
                                     db.session.rollback()
+                            else:
+                                logger.debug(f"Skipping message {message.id} in {channel_title} - no text content")
 
             except Exception as e:
                 logger.error(f"Error processing dialog {getattr(dialog, 'title', 'Unknown')}: {str(e)}")
@@ -97,12 +100,42 @@ async def collect_messages():
         if client:
             await client.disconnect()
 
+async def check_database_status():
+    """Check database status and report metrics"""
+    with app.app_context():
+        try:
+            total_messages = TelegramMessage.query.count()
+            latest_message = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).first()
+            latest_time = latest_message.timestamp if latest_message else "No messages"
+            
+            channels = db.session.query(TelegramMessage.channel_id, 
+                                       TelegramMessage.channel_title, 
+                                       db.func.count(TelegramMessage.id).label('count'))\
+                                .group_by(TelegramMessage.channel_id)\
+                                .all()
+            
+            logger.info(f"Database Status: {total_messages} total messages")
+            logger.info(f"Latest message timestamp: {latest_time}")
+            logger.info("Channel statistics:")
+            for channel in channels:
+                logger.info(f"  - {channel.channel_title}: {channel.count} messages")
+                
+        except Exception as e:
+            logger.error(f"Error checking database status: {str(e)}")
+
 async def main():
-    """Main loop with backoff"""
+    """Main loop with backoff and status reporting"""
+    cycle_count = 0
     while True:
         try:
-            logger.info("Starting collection cycle...")
+            cycle_count += 1
+            logger.info(f"Starting collection cycle #{cycle_count}...")
             await collect_messages()
+            
+            # Every 5 cycles, check database status
+            if cycle_count % 5 == 0:
+                await check_database_status()
+                
             logger.info("Collection complete, waiting 60 seconds...")
             await asyncio.sleep(60)
         except Exception as e:
