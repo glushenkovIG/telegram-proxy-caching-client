@@ -86,21 +86,13 @@ def get_proper_dialog_type(entity):
 
     logger.info(f"Detecting type for entity: {type(entity)} with attributes: {dir(entity)}")
 
-    if isinstance(entity, User):
-        if getattr(entity, 'bot', False):
-            return 'bot'
-        if getattr(entity, 'deleted', False) or isinstance(entity, UserEmpty):
-            return 'deleted_account'
-        return 'private'
-    elif isinstance(entity, Chat) or isinstance(entity, ChatForbidden):
-        return 'group'
-    elif isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
-        try:
-            # Log detailed attributes for debugging
+    try:
+        # For Channels (supergroups/broadcasts)
+        if isinstance(entity, Channel):
             broadcast = getattr(entity, 'broadcast', False)
             megagroup = getattr(entity, 'megagroup', False)
             username = getattr(entity, 'username', None)
-            logger.info(f"Channel attributes - broadcast: {broadcast}, megagroup: {megagroup}, username: {username}")
+            logger.info(f"Channel {entity.id} attributes - broadcast: {broadcast}, megagroup: {megagroup}, username: {username}")
 
             if broadcast and not megagroup:
                 return 'channel'
@@ -108,14 +100,27 @@ def get_proper_dialog_type(entity):
                 if username:
                     return 'public_supergroup'
                 return 'private_supergroup'
-            return 'channel'
-        except Exception as e:
-            logger.error(f"Error detecting channel type: {str(e)}")
-            return 'channel'  # Default to channel if detection fails
+            return 'channel'  # Default for channels
 
-    logger.warning(f"Unknown entity type: {type(entity)}")
-    return 'unknown'
+        # For Users (private chats/bots)
+        elif isinstance(entity, User):
+            if getattr(entity, 'bot', False):
+                return 'bot'
+            if getattr(entity, 'deleted', False) or isinstance(entity, UserEmpty):
+                return 'deleted_account'
+            return 'private'
 
+        # For Small Groups
+        elif isinstance(entity, (Chat, ChatForbidden)):
+            return 'group'
+
+        # Unknown type - log details for debugging
+        logger.error(f"Unknown entity type: {type(entity).__name__}, dir: {dir(entity)}")
+        return 'unknown'
+
+    except Exception as e:
+        logger.error(f"Error in get_proper_dialog_type: {str(e)}")
+        return 'unknown'
 
 async def collect_messages():
     """Main collection function"""
@@ -171,9 +176,10 @@ async def collect_messages():
                 channel_id = str(dialog.id)
                 channel_title = getattr(dialog, 'title', channel_id)
 
-                # Use improved dialog type detection with logging
-                dialog_type = get_proper_dialog_type(dialog.entity)
-                logger.info(f"Dialog {channel_title} detected as type: {dialog_type}")
+                # Get entity and detect type with detailed logging
+                entity = dialog.entity
+                dialog_type = get_proper_dialog_type(entity)
+                logger.info(f"Dialog '{channel_title}' (ID: {channel_id}) detected as type: {dialog_type}")
 
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
@@ -183,7 +189,7 @@ async def collect_messages():
 
                 # Get latest message ID from database
                 with app.app_context():
-                    # Force immediate processing of more messages (increased limit)
+                    # Force immediate processing of more messages
                     message_limit = 200
 
                     # Get latest stored message for this channel
@@ -194,14 +200,14 @@ async def collect_messages():
                     latest_id = latest_msg.message_id if latest_msg else 0
                     logger.info(f"Latest message ID in database for {channel_title}: {latest_id}")
 
-                    # Process messages
+                    # Process messages with detailed logging
                     message_count = 0
                     async for message in client.iter_messages(dialog, limit=message_limit):
                         if message.id <= latest_id and latest_id != 0:
                             logger.info(f"Skipping message {message.id} in {channel_title} - already processed")
-                            continue  # Skip this message but check others
+                            continue
 
-                        # Save ALL messages with text content, regardless of channel type
+                        # Save ALL messages with text content
                         if message.text:
                             try:
                                 # Check if message is outgoing
@@ -220,7 +226,7 @@ async def collect_messages():
                                 db.session.add(new_msg)
                                 db.session.commit()
                                 message_count += 1
-                                logger.info(f"Saved message {message.id} from {channel_title} ({dialog_type}, {'outbox' if is_outgoing else 'inbox'})")
+                                logger.info(f"Saved message {message.id} from {channel_title} ({dialog_type})")
                             except Exception as e:
                                 logger.error(f"Error saving message: {str(e)}")
                                 db.session.rollback()
