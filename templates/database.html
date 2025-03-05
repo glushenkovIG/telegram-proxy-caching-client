@@ -1,0 +1,42 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>Database Information</h1>
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5>Statistics</h5>
+      <p>Total Messages: <strong>{{ all_count }}</strong></p>
+      <p>TON Dev Messages: <strong>{{ ton_count }}</strong></p>
+    </div>
+  </div>
+
+  <h3>Channels</h3>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th>Message Count</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for channel in channels %}
+      <tr>
+        <td>{{ channel.channel_title }}</td>
+        <td>{{ channel.count }}</td>
+        <td>
+          {% if channel.is_ton_dev %}
+          <span class="badge bg-primary">TON DEV</span>
+          {% else %}
+          <span class="badge bg-secondary">Other</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

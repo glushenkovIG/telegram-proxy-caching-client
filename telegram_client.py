@@ -8,17 +8,15 @@ async def main():
     """Interactive setup for Telegram client"""
     print("Setting up Telegram client...")
     
-    # Get API credentials from environment
-    api_id = os.environ.get("TELEGRAM_API_ID")
-    api_hash = os.environ.get("TELEGRAM_API_HASH")
+    # Get API credentials
+    api_id = input("Enter your Telegram API ID: ")
+    api_hash = input("Enter your Telegram API Hash: ")
     
-    if not api_id or not api_hash:
-        print("API credentials not found in environment variables.")
-        api_id = input("Enter your Telegram API ID: ")
-        api_hash = input("Enter your Telegram API Hash: ")
-        os.environ["TELEGRAM_API_ID"] = api_id
-        os.environ["TELEGRAM_API_HASH"] = api_hash
+    # Save to environment
+    os.environ["TELEGRAM_API_ID"] = api_id
+    os.environ["TELEGRAM_API_HASH"] = api_hash
 
+    # Create client
     client = TelegramClient('ton_collector_session', int(api_id), api_hash)
 
     await client.connect()
@@ -32,7 +30,8 @@ async def main():
             password = input("Enter your 2FA password: ")
             await client.sign_in(password=password)
 
-    print("Successfully authenticated! The collector can now run.")
+    print("\nSuccess! Authentication complete. The collector can now run.")
+    print("Run 'python main.py' to start the proxy server.")
     await client.disconnect()
 
 if __name__ == "__main__":

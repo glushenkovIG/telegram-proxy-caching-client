@@ -5,7 +5,7 @@ import logging
 import threading
 from datetime import datetime
 from telethon import TelegramClient
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
@@ -205,21 +205,6 @@ def index():
                           all_count=all_count,
                           show_ton_only=show_ton_only)
 
-@app.route('/ton')
-def ton_messages():
-    # Get only TON dev messages
-    messages = TelegramMessage.query.filter_by(is_ton_dev=True).order_by(TelegramMessage.timestamp.desc()).limit(100).all()
-    
-    # Count stats
-    ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
-    all_count = TelegramMessage.query.count()
-    
-    return render_template('index.html', 
-                          messages=messages, 
-                          ton_count=ton_count,
-                          all_count=all_count,
-                          show_ton_only=True)
-
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
     """Interactive setup for Telegram API credentials"""
@@ -236,15 +221,36 @@ def setup():
     
     return render_template('setup.html')
 
+@app.route('/database')
+def database_info():
+    """View database info"""
+    ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
+    all_count = TelegramMessage.query.count()
+    
+    channels = db.session.query(
+        TelegramMessage.channel_id,
+        TelegramMessage.channel_title,
+        TelegramMessage.is_ton_dev,
+        db.func.count(TelegramMessage.id).label('count')
+    ).group_by(
+        TelegramMessage.channel_id,
+        TelegramMessage.channel_title,
+        TelegramMessage.is_ton_dev
+    ).all()
+    
+    return render_template('database.html', 
+                          ton_count=ton_count,
+                          all_count=all_count,
+                          channels=channels)
+
 # Run the application
 if __name__ == "__main__":
-    # Create tables if they don't exist
     with app.app_context():
-        db.create_all()
-        logger.info("Database initialized successfully")
+        # Use existing tables
+        logger.info("Using existing database tables")
 
     # Start collector in a separate thread
-    logger.info("Starting Telegram collector and server")
+    logger.info("Starting simplified Telegram collector and server")
     collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
 
