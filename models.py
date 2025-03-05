@@ -1,5 +1,12 @@
 from datetime import datetime
-from app import db
+from sqlalchemy.orm import DeclarativeBase
+from flask_sqlalchemy import SQLAlchemy
+
+class Base(DeclarativeBase):
+    pass
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(model_class=Base)
 
 class TelegramMessage(db.Model):
     __tablename__ = 'telegram_messages'
