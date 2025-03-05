@@ -1,11 +1,10 @@
-
 import os
 import asyncio
 import logging
 import threading
 from datetime import datetime
 from telethon import TelegramClient
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
@@ -23,9 +22,6 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///messages.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
-
-# Initialize database with app
 db.init_app(app)
 
 # Define model
@@ -40,47 +36,39 @@ class TelegramMessage(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_ton_dev = db.Column(db.Boolean, default=False)
 
-# Initialize database tables if they don't exist
-with app.app_context():
-    from sqlalchemy import inspect
-    inspector = inspect(db.engine)
-    if not inspector.has_table('telegram_messages'):
-        db.create_all()
-        logger.info("Database tables created for the first time")
-    else:
-        logger.info("Using existing database tables")
-
-# Utility function to check if a channel is TON-related
+# TON Dev detector function
 def should_be_ton_dev(channel_title):
-    if not channel_title:
-        return False
-
-    # List of known TON channel names or keywords
-    ton_keywords = [
-        "ton", "telegram open network", "the open network", 
-        "telegram developers", "tact language"
+    """Determine if a channel title indicates a TON developer channel"""
+    ton_dev_keywords = [
+        'ton dev', 'telegram developers', 'ton development',
+        'ton developers', 'ton community', 'ton research',
+        'ton jobs', 'ton tact', 'ton data hub', 'ton society',
+        'hackers league', 'ton status', 'ton contests'
     ]
 
-    # Exact matches for known TON channels
-    ton_channels = [
-        "ton dev chat", "ton dev chat (en)", "ton dev chat (ру)", 
-        "ton dev chat (中文)", "ton dev news", "ton status", 
-        "ton community", "ton society chat", "ton research",
-        "ton contests", "ton tact language chat", "ton jobs", 
-        "telegram developers community", "botnews", 
-        "testnet ton status", "hackers league hackathon",
-        "ton society id", "ton data hub"
+    channel_title_lower = channel_title.lower()
+
+    # Exact channel matches
+    exact_matches = [
+        'ton dev chat', 'ton dev news', 'ton dev chat (中文)',
+        'ton dev chat (en)', 'ton dev chat (py)', 'ton dev chat (ру)',
+        'telegram developers community', 'ton society chat',
+        'ton data hub chat', 'ton tact language chat',
+        'hackers league hackathon', 'ton research',
+        'ton community', 'ton jobs', 'ton status',
+        'testnet ton status', 'ton contests', 'botnews',
+        'the open network'
     ]
 
-    channel_lower = channel_title.lower()
+    for match in exact_matches:
+        if channel_title_lower == match.lower():
+            logger.info(f"Channel '{channel_title}' exactly matched TON channel: {match}")
+            return True
 
-    # Check if it's an exact match
-    if channel_lower in ton_channels:
-        return True
-
-    # Check for keyword match
-    for keyword in ton_keywords:
-        if keyword in channel_lower:
+    # Keyword-based matches
+    for keyword in ton_dev_keywords:
+        if keyword.lower() in channel_title_lower:
+            logger.info(f"Channel '{channel_title}' matched TON keyword: {keyword}")
             return True
 
     return False
@@ -128,7 +116,7 @@ async def collect_messages():
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
 
-                # Process all channels, storing all messages
+                # Process all channels, but mark TON Dev ones specially
                 logger.info(f"Processing channel: {channel_title} (is_ton_dev={is_ton_dev})")
 
                 # Get latest message ID from database
@@ -156,7 +144,7 @@ async def collect_messages():
                                     channel_title=channel_title,
                                     content=message.text,
                                     timestamp=message.date,
-                                    is_ton_dev=is_ton_dev  # Mark TON dev channels for filtering
+                                    is_ton_dev=is_ton_dev  # Mark appropriately
                                 )
                                 db.session.add(new_msg)
                                 db.session.commit()
@@ -189,62 +177,43 @@ async def collector_loop():
             await asyncio.sleep(60)
 
 # Function to start the collector in a separate thread
-def start_collector():
+def start_collector_thread():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(collector_loop())
 
-# Flask routes - show both TON dev messages and all messages
+# Define routes
 @app.route('/')
 def index():
-    # Get filter from query parameters
-    filter_type = request.args.get('filter', 'ton_dev')  # Default to TON Dev
+    # Get all messages, with option to filter
+    show_ton_only = True  # Can be made into a query parameter if needed
 
-    # Base query
-    query = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100)
+    if show_ton_only:
+        # Only get TON dev messages
+        messages = TelegramMessage.query.filter_by(is_ton_dev=True).order_by(TelegramMessage.timestamp.desc()).limit(100).all()
+    else:
+        # Get all messages
+        messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100).all()
 
-    # Apply filter
-    if filter_type == 'ton_dev':
-        query = query.filter_by(is_ton_dev=True)
-    # 'all' filter doesn't need additional conditions
+    return render_template('index.html', messages=messages)
 
-    messages = query.all()
-    return render_template('index.html', messages=messages, current_filter=filter_type)
+@app.route('/all')
+def all_messages():
+    # Get all messages without filtering
+    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100).all()
+    return render_template('index.html', messages=messages)
 
-@app.route('/status')
-def status():
-    try:
-        message_count = TelegramMessage.query.count()
-        ton_dev_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
-
-        channel_count = db.session.query(TelegramMessage.channel_title)\
-                              .distinct()\
-                              .count()
-        latest_message = TelegramMessage.query\
-            .order_by(TelegramMessage.timestamp.desc())\
-            .first()
-
-        return jsonify({
-            'status': 'healthy',
-            'messages_collected': message_count,
-            'ton_dev_messages': ton_dev_count,
-            'channels_monitored': channel_count,
-            'latest_message_time': latest_message.timestamp.isoformat() if latest_message else None,
-        })
-    except Exception as e:
-        logger.error(f"Error checking status: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'error': str(e)
-        }), 500
-
-# Main entry point
+# Run the application
 if __name__ == "__main__":
+    # Create tables if they don't exist
+    with app.app_context():
+        db.create_all()
+        logger.info("Application created successfully")
+
+    # Start collector in a separate thread
     logger.info("Starting simplified Telegram collector and server")
-    
-    # Start collector in a background thread
-    collector_thread = threading.Thread(target=start_collector, daemon=True)
+    collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
-    
+
     # Start Flask server
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)
