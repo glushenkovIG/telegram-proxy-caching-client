@@ -73,9 +73,13 @@ async def collect_messages():
                         ).order_by(TelegramMessage.message_id.desc()).first()
 
                         latest_id = latest_msg.message_id if latest_msg else 0
+                        
+                        # Use larger limit for TON channels
+                        message_limit = 200 if is_ton_dev else 100
+                        logger.info(f"Collecting messages from {channel_title} (is_ton_dev={is_ton_dev}), limit={message_limit}")
 
                         # Get new messages
-                        async for message in client.iter_messages(dialog, limit=100):
+                        async for message in client.iter_messages(dialog, limit=message_limit):
                             if message.id <= latest_id:
                                 logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
                                 break
