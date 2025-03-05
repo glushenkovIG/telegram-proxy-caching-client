@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import sqlalchemy
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from datetime import datetime
@@ -17,9 +18,9 @@ from utils import should_be_ton_dev
 # Load config
 from config import Config
 
-async def collect_messages():
+async def collect_messages(custom_client=None):
     """Main collection function"""
-    client = None
+    client = custom_client
     try:
         # Ensure tables are created
         with app.app_context():
@@ -28,7 +29,8 @@ async def collect_messages():
                 logger.info("Database tables created/verified")
             except Exception as e:
                 logger.error(f"Error creating database tables: {str(e)}")
-                return
+                if "duplicate key value" not in str(e):  # Ignore if tables already exist
+                    return
                 
         session_path = 'ton_collector_session.session'
         if not os.path.exists(session_path):
@@ -97,6 +99,17 @@ async def collect_messages():
                                     db.session.add(new_msg)
                                     db.session.commit()
                                     logger.info(f"Saved new message {message.id} from {channel_title}")
+                                except sqlalchemy.exc.OperationalError as oe:
+                                    if "database is locked" in str(oe):
+                                        logger.warning(f"Database lock detected, waiting and retrying...")
+                                        db.session.rollback()
+                                        await asyncio.sleep(1)  # Wait a bit and let other processes finish
+                                        try:
+                                            db.session.add(new_msg)
+                                            db.session.commit()
+                                            logger.info(f"Successfully saved message {message.id} after retry")
+                                        except Exception as retry_e:
+                                            logger.error(f"Retry failed: {str(retry_e)}")
                                 except Exception as e:
                                     logger.error(f"Error saving message {message.id} from {channel_title}: {str(e)}")
                                     db.session.rollback()
