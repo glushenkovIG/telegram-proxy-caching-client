@@ -2,8 +2,15 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
-        <h1>TON Development Messages</h1>
-        <p class="text-muted">Total messages: {{ total_messages }}</p>
+        <h1>{% if only_ton_dev %}TON Development Messages{% else %}All Messages{% endif %}</h1>
+        <div class="text-muted">
+            {% if only_ton_dev %}
+            <a href="/" class="btn btn-outline-secondary btn-sm">Show All Messages</a>
+            {% else %}
+            <a href="/?ton_dev=1" class="btn btn-outline-primary btn-sm">Show Only TON Dev</a>
+            {% endif %}
+            <p>Total: {{ total_messages }} / TON Dev: {{ ton_dev_messages }}</p>
+        </div>
     </div>
 
     <div class="messages mt-4">

@@ -69,20 +69,20 @@ async def collect_messages(custom_client=None):
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
 
-                if is_ton_dev:
-                    logger.info(f"Processing TON Dev channel: {channel_title}")
+                # Process all channels, but mark TON Dev ones specially
+                logger.info(f"Processing channel: {channel_title} (is_ton_dev={is_ton_dev})")
 
-                    # Get latest message ID from database
-                    with app.app_context():
-                        latest_msg = TelegramMessage.query.filter_by(
-                            channel_id=channel_id
-                        ).order_by(TelegramMessage.message_id.desc()).first()
+                # Get latest message ID from database
+                with app.app_context():
+                    latest_msg = TelegramMessage.query.filter_by(
+                        channel_id=channel_id
+                    ).order_by(TelegramMessage.message_id.desc()).first()
 
-                        latest_id = latest_msg.message_id if latest_msg else 0
-                        
-                        # Limit to 10 messages per channel for initial fetch
-                        message_limit = 10
-                        logger.info(f"Collecting messages from {channel_title} (is_ton_dev={is_ton_dev}), limit={message_limit}")
+                    latest_id = latest_msg.message_id if latest_msg else 0
+                    
+                    # Limit to 10 messages per channel for initial fetch
+                    message_limit = 10
+                    logger.info(f"Collecting messages from {channel_title} (is_ton_dev={is_ton_dev}), limit={message_limit}")
 
                         # Get only the 10 most recent messages, then track new ones on future runs
                         async for message in client.iter_messages(dialog, limit=message_limit):
@@ -135,19 +135,31 @@ async def check_database_status():
     with app.app_context():
         try:
             total_messages = TelegramMessage.query.count()
+            ton_dev_messages = TelegramMessage.query.filter_by(is_ton_dev=True).count()
             latest_message = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).first()
             latest_time = latest_message.timestamp if latest_message else "No messages"
             
-            channels = db.session.query(TelegramMessage.channel_id, 
+            # Get stats for all channels
+            all_channels = db.session.query(TelegramMessage.channel_id, 
                                        TelegramMessage.channel_title, 
                                        db.func.count(TelegramMessage.id).label('count'))\
                                 .group_by(TelegramMessage.channel_id)\
                                 .all()
             
-            logger.info(f"Database Status: {total_messages} total messages")
+            # Get stats for TON Dev channels only
+            ton_channels = db.session.query(TelegramMessage.channel_id, 
+                                       TelegramMessage.channel_title, 
+                                       db.func.count(TelegramMessage.id).label('count'))\
+                                .filter(TelegramMessage.is_ton_dev == True)\
+                                .group_by(TelegramMessage.channel_id)\
+                                .all()
+            
+            logger.info(f"Database Status: {total_messages} total messages ({ton_dev_messages} TON Dev)")
             logger.info(f"Latest message timestamp: {latest_time}")
-            logger.info("Channel statistics:")
-            for channel in channels:
+            logger.info(f"Total channels: {len(all_channels)} ({len(ton_channels)} TON Dev)")
+            
+            logger.info("Channel statistics (TON Dev channels):")
+            for channel in ton_channels:
                 logger.info(f"  - {channel.channel_title}: {channel.count} messages")
                 
         except Exception as e:
