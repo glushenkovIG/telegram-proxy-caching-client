@@ -8,6 +8,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from telethon.tl.types import Channel, Chat, User
+from werkzeug.serving import is_running_from_reloader
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -418,17 +419,13 @@ if __name__ == "__main__":
             # Don't recreate anything on error
             pass
 
-    # Start collector in a separate thread
-    logger.info("Starting simplified Telegram collector and server")
-    collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
-    collector_thread.start()
+    # Start collector in a separate thread if not running in reloader
+    if not is_running_from_reloader():
+        logger.info("Starting simplified Telegram collector")
+        collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
+        collector_thread.start()
 
-    # Start Flask server with improved error handling
-    try:
-        logger.info("Starting Flask server on port 5000")
+    # Let gunicorn handle the server
+    if os.environ.get('FLASK_ENV') != 'production':
+        logger.info("Starting Flask development server on port 5000")
         app.run(host="0.0.0.0", port=5000, debug=False)
-    except OSError as e:
-        if "Address already in use" in str(e):
-            logger.error("Port 5000 is already in use. Please ensure no other Flask server is running.")
-            exit(1)
-        raise

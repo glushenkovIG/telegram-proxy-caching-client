@@ -17,22 +17,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask Server"
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
+args = "Production Server"
 
 [[workflows.workflow]]
 name = "Run App"
@@ -81,6 +66,21 @@ author = 36288906
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+
+[[workflows.workflow]]
+name = "Production Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "FLASK_ENV=production gunicorn -w 4 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level info --access-logfile - --error-logfile - --preload"
+waitForPort = 5000
 
 [[ports]]
 localPort = 3000
