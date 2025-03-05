@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "gunicorn --workers=4 --bind 0.0.0.0:5000 main:app"]
 
 [workflows]
-runButton = "Project"
+runButton = "TON Monitor"
 
 [[workflows.workflow]]
 name = "Project"
@@ -76,6 +76,14 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "TON Monitor"
+author = 36288906
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 3000
