@@ -176,12 +176,12 @@ async def collector_loop():
         try:
             logger.info("Starting collection cycle...")
             await collect_messages()
-            logger.info("Collection complete, waiting 120 seconds...")
-            await asyncio.sleep(120)  # Check every 2 minutes
+            logger.info("Collection complete, waiting 30 seconds...")
+            await asyncio.sleep(30)  # Check every 30 seconds
         except Exception as e:
             logger.error(f"Error in main loop: {str(e)}", exc_info=True)
-            logger.info("Retrying collection in 30 seconds...")
-            await asyncio.sleep(30)  # Shorter retry on error
+            logger.info("Retrying collection in 10 seconds...")
+            await asyncio.sleep(10)  # Shorter retry on error
 
 # Function to start the collector in a separate thread
 def start_collector_thread():
@@ -264,4 +264,4 @@ if __name__ == "__main__":
     collector_thread.start()
 
     # Start Flask server on a specific port to avoid conflicts
-    app.run(host="0.0.0.0", port=3000, debug=False)
+    app.run(host="0.0.0.0", port=8080, debug=False)
