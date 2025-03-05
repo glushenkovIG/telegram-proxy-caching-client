@@ -1,10 +1,11 @@
+
 import os
 import asyncio
 import logging
 import threading
 from datetime import datetime
 from telethon import TelegramClient
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
@@ -39,6 +40,9 @@ class TelegramMessage(db.Model):
 # TON Dev detector function
 def should_be_ton_dev(channel_title):
     """Determine if a channel title indicates a TON developer channel"""
+    if not channel_title:
+        return False
+        
     ton_dev_keywords = [
         'ton dev', 'telegram developers', 'ton development',
         'ton developers', 'ton community', 'ton research',
@@ -116,7 +120,7 @@ async def collect_messages():
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
 
-                # Process all channels, but mark TON Dev ones specially
+                # Process ALL channels, mark TON Dev ones specially
                 logger.info(f"Processing channel: {channel_title} (is_ton_dev={is_ton_dev})")
 
                 # Get latest message ID from database
@@ -144,7 +148,7 @@ async def collect_messages():
                                     channel_title=channel_title,
                                     content=message.text,
                                     timestamp=message.date,
-                                    is_ton_dev=is_ton_dev  # Mark appropriately
+                                    is_ton_dev=is_ton_dev
                                 )
                                 db.session.add(new_msg)
                                 db.session.commit()
@@ -185,23 +189,40 @@ def start_collector_thread():
 # Define routes
 @app.route('/')
 def index():
-    # Get all messages, with option to filter
-    show_ton_only = True  # Can be made into a query parameter if needed
-
+    # Default view shows ALL messages - no filter by default
+    show_ton_only = request.args.get('ton_only', 'false').lower() == 'true'
+    
     if show_ton_only:
-        # Only get TON dev messages
+        # User requested TON-only filter
         messages = TelegramMessage.query.filter_by(is_ton_dev=True).order_by(TelegramMessage.timestamp.desc()).limit(100).all()
     else:
-        # Get all messages
+        # Get ALL messages, without filtering
         messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100).all()
+    
+    # Count stats
+    ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
+    all_count = TelegramMessage.query.count()
+    
+    return render_template('index.html', 
+                          messages=messages, 
+                          ton_count=ton_count,
+                          all_count=all_count,
+                          show_ton_only=show_ton_only)
 
-    return render_template('index.html', messages=messages)
-
-@app.route('/all')
-def all_messages():
-    # Get all messages without filtering
-    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100).all()
-    return render_template('index.html', messages=messages)
+@app.route('/ton')
+def ton_messages():
+    # Get only TON dev messages
+    messages = TelegramMessage.query.filter_by(is_ton_dev=True).order_by(TelegramMessage.timestamp.desc()).limit(100).all()
+    
+    # Count stats
+    ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
+    all_count = TelegramMessage.query.count()
+    
+    return render_template('index.html', 
+                          messages=messages, 
+                          ton_count=ton_count,
+                          all_count=all_count,
+                          show_ton_only=True)
 
 # Run the application
 if __name__ == "__main__":

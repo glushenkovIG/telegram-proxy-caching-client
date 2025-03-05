@@ -31,20 +31,38 @@
         }
         .nav {
             margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
         }
         .nav a {
             margin-right: 10px;
             text-decoration: none;
             color: #0088cc;
+            padding: 5px 10px;
+        }
+        .nav a.active {
+            background-color: #0088cc;
+            color: white;
+            border-radius: 3px;
+        }
+        .stats {
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <h1>Telegram Messages</h1>
     
+    <div class="stats">
+        <p>Total messages: {{ all_count }} ({{ ton_count }} TON Dev messages)</p>
+    </div>
+    
     <div class="nav">
-        <a href="/">TON Dev Messages</a> | 
-        <a href="/all">All Messages</a>
+        <a href="/" {% if not show_ton_only %}class="active"{% endif %}>ALL Messages</a>
+        <a href="/ton" {% if show_ton_only %}class="active"{% endif %}>TON Dev Messages Only</a>
     </div>
     
     {% for message in messages %}
