@@ -1,60 +1,35 @@
+{% extends 'base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON Dev Messages</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .message {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .message-header {
-            font-weight: bold;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .message-content {
-            white-space: pre-wrap;
-        }
-        .channel-title {
-            color: #2980b9;
-        }
-        .timestamp {
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-    </style>
-</head>
-<body>
-    <h1>TON Dev Messages</h1>
-    
-    {% for message in messages %}
-    <div class="message">
-        <div class="message-header">
-            <span class="channel-title">{{ message.channel_title }}</span>
-            <span class="timestamp">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+{% block content %}
+<div class="container mt-4">
+    <h1>Telegram Messages</h1>
+
+    <div class="mb-4">
+        <div class="btn-group" role="group">
+            <a href="/?filter=ton_dev" class="btn btn-{% if current_filter == 'ton_dev' %}primary{% else %}outline-primary{% endif %}">TON Dev Messages</a>
+            <a href="/?filter=all" class="btn btn-{% if current_filter == 'all' %}primary{% else %}outline-primary{% endif %}">All Messages</a>
         </div>
-        <div class="message-content">{{ message.content }}</div>
     </div>
-    {% else %}
-    <p>No TON Dev messages found.</p>
-    {% endfor %}
-</body>
-</html>
+
+    <div class="row">
+        {% for message in messages %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <strong>{{ message.channel_title }}</strong>
+                    {% if message.is_ton_dev %}
+                    <span class="badge bg-primary float-end">TON Dev</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ message.content|safe }}</p>
+                </div>
+                <div class="card-footer text-muted">
+                    {{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
