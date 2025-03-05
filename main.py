@@ -410,5 +410,12 @@ if __name__ == "__main__":
     collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
 
-    # Start Flask server on port 5000 as required
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    # Start Flask server with improved error handling
+    try:
+        logger.info("Starting Flask server on port 5000")
+        app.run(host="0.0.0.0", port=5000, debug=False)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            logger.error("Port 5000 is already in use. Please ensure no other Flask server is running.")
+            exit(1)
+        raise

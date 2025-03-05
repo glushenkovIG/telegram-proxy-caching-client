@@ -5,10 +5,10 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "gunicorn --workers=4 --bind 0.0.0.0:5000 main:app"]
+run = ["sh", "-c", "python main.py"]
 
 [workflows]
-runButton = "Telegram Collector"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -17,14 +17,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask API and Telegram Collector"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Flask Server"
 
 [[workflows.workflow]]
-name = "Flask API and Telegram Collector"
+name = "Flask Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -37,14 +33,6 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Restart Flask"
-author = 36288906
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python app.py"
 
 [[workflows.workflow]]
 name = "Run App"
@@ -61,21 +49,6 @@ author = 36288906
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
 
 [[workflows.workflow]]
 name = "TON Monitor"
