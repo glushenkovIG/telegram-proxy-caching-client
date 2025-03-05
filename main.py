@@ -300,4 +300,4 @@ if __name__ == "__main__":
     collector_thread.start()
 
     # Start Flask server on a specific port to avoid conflicts
-    app.run(host="0.0.0.0", port=3030, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=False)
