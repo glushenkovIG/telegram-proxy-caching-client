@@ -15,6 +15,15 @@ def run_flask():
 def run_collector():
     # Wait for Flask app to initialize
     time.sleep(5)
+    # Ensure database tables are created
+    from app import app, db
+    with app.app_context():
+        try:
+            db.create_all()
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Error creating database tables: {str(e)}")
+    
     import asyncio
     from collector import main
     asyncio.run(main())
