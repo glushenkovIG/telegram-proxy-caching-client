@@ -92,9 +92,21 @@ async def collect_messages():
         client = TelegramClient(session_path, api_id, api_hash)
 
         await client.connect()
-        if not await client.is_user_authorized():
-            logger.error("Session exists but unauthorized. Please run the setup first")
-            return
+        # Add timeout for connection
+        try:
+            is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=30)
+            if not is_authorized:
+                logger.error("Session exists but unauthorized. Please run the setup first")
+                return
+        except asyncio.TimeoutError:
+            logger.error("Connection timeout. Reconnecting...")
+            await client.disconnect()
+            await asyncio.sleep(5)
+            await client.connect()
+            is_authorized = await client.is_user_authorized()
+            if not is_authorized:
+                logger.error("Session exists but unauthorized after retry. Please run the setup first")
+                return
 
         logger.info("Successfully connected using existing session")
 
@@ -183,6 +195,7 @@ async def collect_messages():
 # Collector main loop
 async def collector_loop():
     """Main loop with backoff"""
+    consecutive_errors = 0
     while True:
         try:
             # Add more detailed progress reporting
@@ -206,13 +219,29 @@ async def collector_loop():
                 
                 logger.info(f"Collection complete - Added {new_messages} total messages ({new_ton_messages} TON messages)")
                 logger.info(f"Database now has {after_count} total messages ({after_ton_count} TON messages)")
-                logger.info("Waiting 15 seconds until next collection...")
+                logger.info("Waiting 10 seconds until next collection...")
             
-            await asyncio.sleep(15)  # Check more frequently
+            # Reset error counter on successful run
+            consecutive_errors = 0
+            await asyncio.sleep(10)  # Check more frequently
         except Exception as e:
+            consecutive_errors += 1
             logger.error(f"Error in main loop: {str(e)}", exc_info=True)
-            logger.info("Retrying collection in 5 seconds...")
-            await asyncio.sleep(5)  # Shorter retry on error
+            
+            # Add escalating backoff for repeated errors
+            retry_wait = min(5 * consecutive_errors, 60)  # Cap at 60 seconds
+            logger.info(f"Retrying collection in {retry_wait} seconds... (error count: {consecutive_errors})")
+            
+            # If many consecutive errors, try to reconnect the session
+            if consecutive_errors > 5:
+                logger.warning("Multiple consecutive errors, attempting to restart the collector...")
+                # Kill the current session and force a new connection on next cycle
+                try:
+                    os.system("rm -f ton_collector_session.session-journal")  # Clear session journal
+                except Exception as se:
+                    logger.error(f"Error clearing session journal: {str(se)}")
+            
+            await asyncio.sleep(retry_wait)
 
 # Function to start the collector in a separate thread
 def start_collector_thread():
