@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "gunicorn --workers=4 --bind 0.0.0.0:5000 main:app"]
 
 [workflows]
-runButton = "Flask Server"
+runButton = "Telegram Collector"
 
 [[workflows.workflow]]
 name = "Project"
@@ -95,6 +95,14 @@ args = "python main.py"
 
 [[workflows.workflow]]
 name = "Run Server"
+author = 36288906
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Telegram Collector"
 author = 36288906
 
 [[workflows.workflow.tasks]]
