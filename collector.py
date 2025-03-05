@@ -22,15 +22,19 @@ async def collect_messages(custom_client=None):
     """Main collection function"""
     client = custom_client
     try:
-        # Ensure tables are created
+        # Ensure tables exist but don't recreate them
         with app.app_context():
             try:
-                db.create_all()
-                logger.info("Database tables created/verified")
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                if not inspector.has_table('telegram_messages'):
+                    db.create_all()
+                    logger.info("Database tables created for the first time")
+                else:
+                    logger.info("Using existing database tables")
             except Exception as e:
-                logger.error(f"Error creating database tables: {str(e)}")
-                if "duplicate key value" not in str(e):  # Ignore if tables already exist
-                    return
+                logger.error(f"Error checking database tables: {str(e)}")
+                return
                 
         session_path = 'ton_collector_session.session'
         if not os.path.exists(session_path):

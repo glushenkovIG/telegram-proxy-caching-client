@@ -15,14 +15,19 @@ def run_flask():
 def run_collector():
     # Wait for Flask app to initialize
     time.sleep(5)
-    # Ensure database tables are created
+    # Verify database tables exist but don't recreate them
     from app import app, db
     with app.app_context():
         try:
-            db.create_all()
-            logger.info("Database tables created successfully")
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            if not inspector.has_table('telegram_messages'):
+                db.create_all()
+                logger.info("Database tables created for the first time")
+            else:
+                logger.info("Using existing database schema")
         except Exception as e:
-            logger.error(f"Error creating database tables: {str(e)}")
+            logger.error(f"Error checking database tables: {str(e)}")
     
     import asyncio
     from collector import main

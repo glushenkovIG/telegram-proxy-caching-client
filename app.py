@@ -32,7 +32,15 @@ def create_app():
     with app.app_context():
         # Import models here to avoid circular imports
         from models import TelegramMessage  # noqa: F401
-        db.create_all()
+        
+        # Check if tables exist before creating them
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if not inspector.has_table('telegram_messages'):
+            db.create_all()
+            logger.info("Database tables created for the first time")
+        else:
+            logger.info("Using existing database tables")
 
         # Register blueprints after models are created
         from routes import bp
