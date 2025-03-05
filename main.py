@@ -36,6 +36,7 @@ class TelegramMessage(db.Model):
     content = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_ton_dev = db.Column(db.Boolean, default=False)
+    is_outgoing = db.Column(db.Boolean, default=False)  # False = inbox, True = outbox
 
 # TON Dev detector function
 def should_be_ton_dev(channel_title):
@@ -100,6 +101,9 @@ async def collect_messages():
         # Get all dialogs with a larger limit to ensure we get external channels
         dialogs = await client.get_dialogs(limit=200)  # Increased from default
         logger.info(f"Found {len(dialogs)} dialogs")
+        
+        # Store the total accessible channels count for later use
+        app.total_accessible_channels = len(dialogs)
 
         # Log all dialog titles to debug
         dialog_titles = [getattr(d, 'title', str(getattr(d, 'id', 'unknown'))) for d in dialogs]
@@ -144,18 +148,22 @@ async def collect_messages():
                         # Save ALL messages with text content, regardless of channel type
                         if message.text:
                             try:
+                                # Check if message is outgoing
+                                is_outgoing = getattr(message, 'out', False)
+                                
                                 new_msg = TelegramMessage(
                                     message_id=message.id,
                                     channel_id=channel_id,
                                     channel_title=channel_title,
                                     content=message.text,
                                     timestamp=message.date,
-                                    is_ton_dev=is_ton_dev
+                                    is_ton_dev=is_ton_dev,
+                                    is_outgoing=is_outgoing
                                 )
                                 db.session.add(new_msg)
                                 db.session.commit()
                                 message_count += 1
-                                logger.info(f"Saved message {message.id} from {channel_title}")
+                                logger.info(f"Saved message {message.id} from {channel_title} ({'outbox' if is_outgoing else 'inbox'})")
                             except Exception as e:
                                 logger.error(f"Error saving message: {str(e)}")
                                 db.session.rollback()
@@ -268,10 +276,15 @@ def database_info():
         TelegramMessage.is_ton_dev
     ).all()
     
+    # Set this value based on your last collection run
+    # or call async function to get it (more complex)
+    total_accessible_channels = getattr(app, 'total_accessible_channels', 0)
+    
     return render_template('database.html', 
                           ton_count=ton_count,
                           all_count=all_count,
-                          channels=channels)
+                          channels=channels,
+                          total_accessible_channels=total_accessible_channels)
 
 # Run the application
 if __name__ == "__main__":

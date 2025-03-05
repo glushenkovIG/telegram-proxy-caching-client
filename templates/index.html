@@ -20,10 +20,13 @@
   <div class="row">
     {% for message in messages %}
     <div class="col-md-6 mb-3">
-      <div class="card {% if message.is_ton_dev %}border-primary{% endif %}">
-        <div class="card-header {% if message.is_ton_dev %}bg-primary text-white{% endif %}">
+      <div class="card {% if message.is_ton_dev %}border-primary{% endif %} {% if message.is_outgoing %}border-success{% endif %}">
+        <div class="card-header {% if message.is_ton_dev %}bg-primary text-white{% endif %} {% if message.is_outgoing %}bg-success text-white{% endif %}">
           <strong>{{ message.channel_title }}</strong>
           {% if message.is_ton_dev %}<span class="badge bg-warning text-dark ms-2">TON</span>{% endif %}
+          <span class="badge {% if message.is_outgoing %}bg-light text-dark{% else %}bg-secondary text-white{% endif %} ms-2">
+            {% if message.is_outgoing %}Outbox{% else %}Inbox{% endif %}
+          </span>
         </div>
         <div class="card-body">
           <p class="card-text">{{ message.content }}</p>
