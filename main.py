@@ -283,27 +283,36 @@ def index():
         all_count = TelegramMessage.query.count()
         outbox_count = TelegramMessage.query.filter_by(is_outgoing=True).count()
 
-        # Get dialog statistics
+        # Get dialog statistics with detailed counts
         dialog_stats = db.session.query(
             TelegramMessage.dialog_type,
-            db.func.count(db.distinct(TelegramMessage.channel_id)).label('count')
+            db.func.count(db.distinct(TelegramMessage.channel_id)).label('dialog_count'),
+            db.func.count(TelegramMessage.id).label('message_count')
         ).group_by(TelegramMessage.dialog_type).all()
 
         # Convert to dictionary for easier template access
         dialog_counts = {
-            'total': sum(count for _, count in dialog_stats),
-            'private': 0,
-            'group': 0,
-            'supergroup': 0,
-            'channel': 0,
-            'unknown': 0
+            'total': 0,
+            'private': {'count': 0, 'messages': 0},
+            'group': {'count': 0, 'messages': 0},
+            'supergroup': {'count': 0, 'messages': 0},
+            'channel': {'count': 0, 'messages': 0},
+            'unknown': {'count': 0, 'messages': 0}
         }
 
-        for dialog_type, count in dialog_stats:
+        # Populate dialog counts
+        for dialog_type, dialog_count, message_count in dialog_stats:
             if dialog_type in dialog_counts:
-                dialog_counts[dialog_type] = count
+                dialog_counts[dialog_type] = {
+                    'count': dialog_count,
+                    'messages': message_count
+                }
             else:
-                dialog_counts['unknown'] += count
+                dialog_counts['unknown'] = {
+                    'count': dialog_count,
+                    'messages': message_count
+                }
+            dialog_counts['total'] += dialog_count
 
     except Exception as e:
         logger.error(f"Database error in index route: {str(e)}", exc_info=True)
@@ -312,8 +321,12 @@ def index():
         all_count = 0
         outbox_count = 0
         dialog_counts = {
-            'total': 0, 'private': 0, 'group': 0,
-            'supergroup': 0, 'channel': 0, 'unknown': 0
+            'total': 0,
+            'private': {'count': 0, 'messages': 0},
+            'group': {'count': 0, 'messages': 0},
+            'supergroup': {'count': 0, 'messages': 0},
+            'channel': {'count': 0, 'messages': 0},
+            'unknown': {'count': 0, 'messages': 0}
         }
 
     return render_template('index.html',

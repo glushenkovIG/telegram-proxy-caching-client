@@ -33,12 +33,12 @@
             <h6>Dialog Types:</h6>
             <ul class="list-unstyled">
               <li>Total Dialogs: <strong>{{ dialog_counts['total'] }}</strong></li>
-              <li>Private Chats: <strong>{{ dialog_counts['private'] }}</strong></li>
-              <li>Groups: <strong>{{ dialog_counts['group'] }}</strong></li>
-              <li>Supergroups: <strong>{{ dialog_counts['supergroup'] }}</strong></li>
-              <li>Channels: <strong>{{ dialog_counts['channel'] }}</strong></li>
-              {% if dialog_counts['unknown'] > 0 %}
-              <li>Unknown Type: <strong>{{ dialog_counts['unknown'] }}</strong></li>
+              <li>Private Chats: <strong>{{ dialog_counts['private']['count'] }}</strong> ({{ dialog_counts['private']['messages'] }} messages)</li>
+              <li>Groups: <strong>{{ dialog_counts['group']['count'] }}</strong> ({{ dialog_counts['group']['messages'] }} messages)</li>
+              <li>Supergroups: <strong>{{ dialog_counts['supergroup']['count'] }}</strong> ({{ dialog_counts['supergroup']['messages'] }} messages)</li>
+              <li>Channels: <strong>{{ dialog_counts['channel']['count'] }}</strong> ({{ dialog_counts['channel']['messages'] }} messages)</li>
+              {% if dialog_counts['unknown']['count'] > 0 %}
+              <li>Unknown Type: <strong>{{ dialog_counts['unknown']['count'] }}</strong> ({{ dialog_counts['unknown']['messages'] }} messages)</li>
               {% endif %}
             </ul>
           </div>
