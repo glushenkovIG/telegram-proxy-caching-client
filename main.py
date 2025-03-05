@@ -43,36 +43,32 @@ def should_be_ton_dev(channel_title):
     if not channel_title:
         return False
         
-    ton_dev_keywords = [
-        'ton dev', 'telegram developers', 'ton development',
-        'ton developers', 'ton community', 'ton research',
-        'ton jobs', 'ton tact', 'ton data hub', 'ton society',
-        'hackers league', 'ton status', 'ton contests'
+    # List of known TON-related keywords
+    ton_keywords = [
+        'ton', 'telegram open network', 'the open network', 
+        'telegram developers', 'tact language'
     ]
 
-    channel_title_lower = channel_title.lower()
-
-    # Exact channel matches
-    exact_matches = [
-        'ton dev chat', 'ton dev news', 'ton dev chat (中文)',
-        'ton dev chat (en)', 'ton dev chat (py)', 'ton dev chat (ру)',
-        'telegram developers community', 'ton society chat',
-        'ton data hub chat', 'ton tact language chat',
-        'hackers league hackathon', 'ton research',
-        'ton community', 'ton jobs', 'ton status',
-        'testnet ton status', 'ton contests', 'botnews',
-        'the open network'
+    # Exact matches for known TON channels
+    ton_channels = [
+        'ton dev chat', 'ton dev chat (en)', 'ton dev chat (ру)', 
+        'ton dev chat (中文)', 'ton dev news', 'ton status', 
+        'ton community', 'ton society chat', 'ton research',
+        'ton contests', 'ton tact language chat', 'ton jobs', 
+        'telegram developers community', 'botnews', 
+        'testnet ton status', 'hackers league hackathon',
+        'ton society id', 'ton data hub'
     ]
 
-    for match in exact_matches:
-        if channel_title_lower == match.lower():
-            logger.info(f"Channel '{channel_title}' exactly matched TON channel: {match}")
-            return True
+    channel_lower = channel_title.lower()
 
-    # Keyword-based matches
-    for keyword in ton_dev_keywords:
-        if keyword.lower() in channel_title_lower:
-            logger.info(f"Channel '{channel_title}' matched TON keyword: {keyword}")
+    # Check if it's an exact match
+    if channel_lower in ton_channels:
+        return True
+
+    # Check for keyword match
+    for keyword in ton_keywords:
+        if keyword in channel_lower:
             return True
 
     return False
@@ -83,7 +79,7 @@ async def collect_messages():
     try:
         session_path = 'ton_collector_session.session'
         if not os.path.exists(session_path):
-            logger.error("No session file found. Please run telegram_client.py first to authenticate.")
+            logger.error("No session file found. Please run the setup first to authenticate.")
             return
 
         # Get API credentials from environment
@@ -99,7 +95,7 @@ async def collect_messages():
 
         await client.connect()
         if not await client.is_user_authorized():
-            logger.error("Session exists but unauthorized. Please run telegram_client.py first")
+            logger.error("Session exists but unauthorized. Please run the setup first")
             return
 
         logger.info("Successfully connected using existing session")
@@ -120,7 +116,7 @@ async def collect_messages():
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
 
-                # Process ALL channels, mark TON Dev ones specially
+                # Process ALL channels, saving messages from every dialog
                 logger.info(f"Processing channel: {channel_title} (is_ton_dev={is_ton_dev})")
 
                 # Get latest message ID from database
@@ -131,10 +127,10 @@ async def collect_messages():
 
                     latest_id = latest_msg.message_id if latest_msg else 0
 
-                    # Get 10 most recent messages
+                    # Get most recent messages
                     message_limit = 10
 
-                    # Get only the 10 most recent messages
+                    # Process messages
                     async for message in client.iter_messages(dialog, limit=message_limit):
                         if message.id <= latest_id:
                             logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
@@ -158,7 +154,7 @@ async def collect_messages():
                                 db.session.rollback()
 
             except Exception as e:
-                logger.error(f"Error processing dialog {channel_title}: {str(e)}")
+                logger.error(f"Error processing dialog {getattr(dialog, 'title', 'unknown')}: {str(e)}")
                 continue
 
     except Exception as e:
@@ -224,17 +220,33 @@ def ton_messages():
                           all_count=all_count,
                           show_ton_only=True)
 
+@app.route('/setup', methods=['GET', 'POST'])
+def setup():
+    """Interactive setup for Telegram API credentials"""
+    if request.method == 'POST':
+        api_id = request.form.get('api_id')
+        api_hash = request.form.get('api_hash')
+        phone = request.form.get('phone')
+        
+        # Set environment variables
+        os.environ['TELEGRAM_API_ID'] = api_id
+        os.environ['TELEGRAM_API_HASH'] = api_hash
+        
+        return render_template('setup_complete.html')
+    
+    return render_template('setup.html')
+
 # Run the application
 if __name__ == "__main__":
     # Create tables if they don't exist
     with app.app_context():
         db.create_all()
-        logger.info("Application created successfully")
+        logger.info("Database initialized successfully")
 
     # Start collector in a separate thread
-    logger.info("Starting simplified Telegram collector and server")
+    logger.info("Starting Telegram collector and server")
     collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
 
-    # Start Flask server
-    app.run(host="0.0.0.0", port=5000)
+    # Start Flask server on a different port to avoid conflicts
+    app.run(host="0.0.0.0", port=8080)

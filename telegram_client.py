@@ -1,3 +1,4 @@
+
 import asyncio
 import os
 from telethon import TelegramClient
@@ -6,8 +7,17 @@ from telethon.errors import SessionPasswordNeededError
 async def main():
     """Interactive setup for Telegram client"""
     print("Setting up Telegram client...")
-    api_id = input("Enter your Telegram API ID: ")
-    api_hash = input("Enter your Telegram API Hash: ")
+    
+    # Get API credentials from environment
+    api_id = os.environ.get("TELEGRAM_API_ID")
+    api_hash = os.environ.get("TELEGRAM_API_HASH")
+    
+    if not api_id or not api_hash:
+        print("API credentials not found in environment variables.")
+        api_id = input("Enter your Telegram API ID: ")
+        api_hash = input("Enter your Telegram API Hash: ")
+        os.environ["TELEGRAM_API_ID"] = api_id
+        os.environ["TELEGRAM_API_HASH"] = api_hash
 
     client = TelegramClient('ton_collector_session', int(api_id), api_hash)
 
@@ -23,14 +33,6 @@ async def main():
             await client.sign_in(password=password)
 
     print("Successfully authenticated! The collector can now run.")
-
-    # Save credentials to environment
-    os.environ["TELEGRAM_API_ID"] = api_id
-    os.environ["TELEGRAM_API_HASH"] = api_hash
-    print("Please add these to your Replit Secrets:")
-    print(f"TELEGRAM_API_ID = {api_id}")
-    print(f"TELEGRAM_API_HASH = {api_hash}")
-
     await client.disconnect()
 
 if __name__ == "__main__":
