@@ -84,22 +84,22 @@ async def collect_messages(custom_client=None):
                     message_limit = 10
                     logger.info(f"Collecting messages from {channel_title} (is_ton_dev={is_ton_dev}), limit={message_limit}")
 
-                        # Get only the 10 most recent messages, then track new ones on future runs
-                        async for message in client.iter_messages(dialog, limit=message_limit):
-                            if message.id <= latest_id:
-                                logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
-                                break
+                    # Get only the 10 most recent messages, then track new ones on future runs
+                    async for message in client.iter_messages(dialog, limit=message_limit):
+                        if message.id <= latest_id:
+                            logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
+                            break
 
-                            if message.text:
-                                try:
-                                    new_msg = TelegramMessage(
-                                        message_id=message.id,
-                                        channel_id=channel_id,
-                                        channel_title=channel_title,
-                                        content=message.text,
-                                        timestamp=message.date,
-                                        is_ton_dev=True
-                                    )
+                        if message.text:
+                            try:
+                                new_msg = TelegramMessage(
+                                    message_id=message.id,
+                                    channel_id=channel_id,
+                                    channel_title=channel_title,
+                                    content=message.text,
+                                    timestamp=message.date,
+                                    is_ton_dev=is_ton_dev  # Set correctly based on channel
+                                )
                                     db.session.add(new_msg)
                                     db.session.commit()
                                     logger.info(f"Saved new message {message.id} from {channel_title}")

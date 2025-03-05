@@ -5,29 +5,19 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/')
 def index():
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    search_query = request.args.get('q')
-    only_ton_dev = request.args.get('ton_dev', '0') == '1'
+    # Get filter from query parameters
+    filter_type = request.args.get('filter', 'ton_dev')  # Default to TON Dev
 
-    query = TelegramMessage.query
+    # Base query
+    query = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100)
 
-    if search_query:
-        query = query.filter(TelegramMessage.content.ilike(f'%{search_query}%'))
-    
-    if only_ton_dev:
-        query = query.filter(TelegramMessage.is_ton_dev == True)
+    # Apply filter
+    if filter_type == 'ton_dev':
+        query = query.filter_by(is_ton_dev=True)
+    # 'all' filter doesn't need additional conditions
 
-    pagination = query.order_by(TelegramMessage.timestamp.desc()).paginate(
-        page=page, per_page=per_page
-    )
-
-    return render_template('index.html', 
-                        messages=pagination.items,
-                        pagination=pagination,
-                        total_messages=TelegramMessage.query.count(),
-                        ton_dev_messages=TelegramMessage.query.filter_by(is_ton_dev=True).count(),
-                        only_ton_dev=only_ton_dev)
+    messages = query.all()
+    return render_template('index.html', messages=messages, current_filter=filter_type)
 
 @bp.route('/ton-dev')
 def ton_dev():
