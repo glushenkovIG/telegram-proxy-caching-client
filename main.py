@@ -122,9 +122,10 @@ async def collect_messages():
 
                 # Get latest message ID from database
                 with app.app_context():
-                    # Get most recent messages (increased limit for better coverage)
-                    message_limit = 20
+                    # Force immediate processing of more messages (increased limit)
+                    message_limit = 100  # Increased from 20
 
+                    # Get latest stored message for this channel
                     latest_msg = TelegramMessage.query.filter_by(
                         channel_id=channel_id
                     ).order_by(TelegramMessage.message_id.desc()).first()
@@ -135,10 +136,11 @@ async def collect_messages():
                     # Process messages
                     message_count = 0
                     async for message in client.iter_messages(dialog, limit=message_limit):
-                        if message.id <= latest_id:
+                        if message.id <= latest_id and latest_id != 0:
                             logger.info(f"Skipping message {message.id} in {channel_title} - already processed")
-                            continue  # Changed from break to continue to process more messages
+                            continue  # Skip this message but check others
 
+                        # Save ALL messages with text content, regardless of channel type
                         if message.text:
                             try:
                                 new_msg = TelegramMessage(
@@ -174,14 +176,34 @@ async def collector_loop():
     """Main loop with backoff"""
     while True:
         try:
-            logger.info("Starting collection cycle...")
+            # Add more detailed progress reporting
+            logger.info("=== STARTING COLLECTION CYCLE ===")
+            
+            # Get current counts for progress tracking
+            with app.app_context():
+                before_count = TelegramMessage.query.count()
+                before_ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
+                
+            # Run collection
             await collect_messages()
-            logger.info("Collection complete, waiting 30 seconds...")
-            await asyncio.sleep(30)  # Check every 30 seconds
+            
+            # Report how many new messages were collected
+            with app.app_context():
+                after_count = TelegramMessage.query.count()
+                after_ton_count = TelegramMessage.query.filter_by(is_ton_dev=True).count()
+                
+                new_messages = after_count - before_count
+                new_ton_messages = after_ton_count - before_ton_count
+                
+                logger.info(f"Collection complete - Added {new_messages} total messages ({new_ton_messages} TON messages)")
+                logger.info(f"Database now has {after_count} total messages ({after_ton_count} TON messages)")
+                logger.info("Waiting 15 seconds until next collection...")
+            
+            await asyncio.sleep(15)  # Check more frequently
         except Exception as e:
             logger.error(f"Error in main loop: {str(e)}", exc_info=True)
-            logger.info("Retrying collection in 10 seconds...")
-            await asyncio.sleep(10)  # Shorter retry on error
+            logger.info("Retrying collection in 5 seconds...")
+            await asyncio.sleep(5)  # Shorter retry on error
 
 # Function to start the collector in a separate thread
 def start_collector_thread():
