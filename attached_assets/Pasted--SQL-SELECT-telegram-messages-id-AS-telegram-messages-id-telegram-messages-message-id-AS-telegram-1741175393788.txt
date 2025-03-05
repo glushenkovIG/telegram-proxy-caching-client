@@ -1,0 +1,156 @@
+
+[SQL: SELECT telegram_messages.id AS telegram_messages_id, telegram_messages.message_id AS telegram_messages_message_id, telegram_messages.channel_id AS telegram_messages_channel_id, telegram_messages.channel_title AS telegram_messages_channel_title, telegram_messages.content AS telegram_messages_content, telegram_messages.timestamp AS telegram_messages_timestamp, telegram_messages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_messages.is_outgoing AS telegram_messages_is_outgoing 
+FROM telegram_messages ORDER BY telegram_messages.timestamp DESC 
+ LIMIT %(param_1)s]
+[parameters: {'param_1': 100}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+INFO:werkzeug:172.31.128.42 - - [05/Mar/2025 11:49:35] "GET / HTTP/1.1" 500 -
+ERROR:main:Exception on / [GET]
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column telegram_messages.is_outgoing does not exist
+LINE 1: ...sages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_m...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/main.py", line 263, in index
+    messages = TelegramMessage.query.order_by(TelegramMessage.timestamp.desc()).limit(100).all()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2699, in all
+    return self._iter().all()  # type: ignore
+           ^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2853, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 516, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column telegram_messages.is_outgoing does not exist
+LINE 1: ...sages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_m...
+                                                             ^
+
+[SQL: SELECT telegram_messages.id AS telegram_messages_id, telegram_messages.message_id AS telegram_messages_message_id, telegram_messages.channel_id AS telegram_messages_channel_id, telegram_messages.channel_title AS telegram_messages_channel_title, telegram_messages.content AS telegram_messages_content, telegram_messages.timestamp AS telegram_messages_timestamp, telegram_messages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_messages.is_outgoing AS telegram_messages_is_outgoing 
+FROM telegram_messages ORDER BY telegram_messages.timestamp DESC 
+ LIMIT %(param_1)s]
+[parameters: {'param_1': 100}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+INFO:werkzeug:172.31.128.42 - - [05/Mar/2025 11:49:35] "GET / HTTP/1.1" 500 -
+INFO:__main__:=== STARTING COLLECTION CYCLE ===
+ERROR:__main__:Error in main loop: (psycopg2.errors.UndefinedColumn) column telegram_messages.is_outgoing does not exist
+LINE 2: ...sages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_m...
+                                                             ^
+
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT telegram_messages.id AS telegram_messages_id, telegram_messages.message_id AS telegram_messages_message_id, telegram_messages.channel_id AS telegram_messages_channel_id, telegram_messages.channel_title AS telegram_messages_channel_title, telegram_messages.content AS telegram_messages_content, telegram_messages.timestamp AS telegram_messages_timestamp, telegram_messages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_messages.is_outgoing AS telegram_messages_is_outgoing 
+FROM telegram_messages) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column telegram_messages.is_outgoing does not exist
+LINE 2: ...sages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_m...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/main.py", line 206, in collector_loop
+    before_count = TelegramMessage.query.count()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 3142, in count
+    self._legacy_from_self(col).enable_eagerloads(False).scalar()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2831, in scalar
+    ret = self.one()
+          ^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2804, in one
+    return self._iter().one()  # type: ignore
+           ^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2853, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 516, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column telegram_messages.is_outgoing does not exist
+LINE 2: ...sages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_m...
+                                                             ^
+
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT telegram_messages.id AS telegram_messages_id, telegram_messages.message_id AS telegram_messages_message_id, telegram_messages.channel_id AS telegram_messages_channel_id, telegram_messages.channel_title AS telegram_messages_channel_title, telegram_messages.content AS telegram_messages_content, telegram_messages.timestamp AS telegram_messages_timestamp, telegram_messages.is_ton_dev AS telegram_messages_is_ton_dev, telegram_messages.is_outgoing AS telegram_messages_is_outgoing 
+FROM telegram_messages) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+INFO:__main__:Retrying collection in 10 seconds... (error count: 2)
+^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2B^[[1;2BINFO:__main__:=== ST
