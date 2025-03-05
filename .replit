@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "gunicorn --workers=4 --bind 0.0.0.0:5000 main:app"]
 
 [workflows]
-runButton = "Telegram Proxy"
+runButton = "Run Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -87,6 +87,14 @@ args = "python main.py"
 
 [[workflows.workflow]]
 name = "Telegram Proxy"
+author = 36288906
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Run Server"
 author = 36288906
 
 [[workflows.workflow.tasks]]
