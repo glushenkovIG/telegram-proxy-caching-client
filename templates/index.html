@@ -42,9 +42,14 @@
             <ul class="list-unstyled" id="dialogStats">
               <li>Total Dialogs: <strong>{{ dialog_counts['total'] }}</strong></li>
               <li>Private Chats: <strong>{{ dialog_counts['private']['count'] }}</strong> (<span>{{ dialog_counts['private']['messages'] }}</span> messages)</li>
+              <li>Bots: <strong>{{ dialog_counts['bot']['count'] }}</strong> (<span>{{ dialog_counts['bot']['messages'] }}</span> messages)</li>
               <li>Groups: <strong>{{ dialog_counts['group']['count'] }}</strong> (<span>{{ dialog_counts['group']['messages'] }}</span> messages)</li>
-              <li>Supergroups: <strong>{{ dialog_counts['supergroup']['count'] }}</strong> (<span>{{ dialog_counts['supergroup']['messages'] }}</span> messages)</li>
               <li>Channels: <strong>{{ dialog_counts['channel']['count'] }}</strong> (<span>{{ dialog_counts['channel']['messages'] }}</span> messages)</li>
+              <li>Public Supergroups: <strong>{{ dialog_counts['public_supergroup']['count'] }}</strong> (<span>{{ dialog_counts['public_supergroup']['messages'] }}</span> messages)</li>
+              <li>Private Supergroups: <strong>{{ dialog_counts['private_supergroup']['count'] }}</strong> (<span>{{ dialog_counts['private_supergroup']['messages'] }}</span> messages)</li>
+              {% if dialog_counts['deleted_account']['count'] > 0 %}
+              <li>Deleted Accounts: <strong>{{ dialog_counts['deleted_account']['count'] }}</strong> (<span>{{ dialog_counts['deleted_account']['messages'] }}</span> messages)</li>
+              {% endif %}
               {% if dialog_counts['unknown']['count'] > 0 %}
               <li>Unknown Type: <strong>{{ dialog_counts['unknown']['count'] }}</strong> (<span>{{ dialog_counts['unknown']['messages'] }}</span> messages)</li>
               {% endif %}

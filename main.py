@@ -81,19 +81,25 @@ def get_proper_dialog_type(entity):
     from telethon.tl.types import (
         User, Chat, Channel,
         ChatForbidden, ChannelForbidden,
-        ChatPhoto, UserEmpty
+        ChatPhoto, UserEmpty, Bot
     )
 
     if isinstance(entity, User):
+        if getattr(entity, 'bot', False):
+            return 'bot'
         if isinstance(entity, UserEmpty):
             return 'deleted_account'
         return 'private'
     elif isinstance(entity, Chat) or isinstance(entity, ChatForbidden):
         return 'group'
     elif isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
+        if getattr(entity, 'broadcast', False):
+            return 'channel'
         if getattr(entity, 'megagroup', False):
-            return 'supergroup'
-        return 'channel'
+            if getattr(entity, 'username', None):
+                return 'public_supergroup'
+            return 'private_supergroup'
+        return 'channel'  # Default to channel if unclear
     return 'unknown'
 
 
@@ -305,15 +311,17 @@ def index():
             db.func.count(TelegramMessage.id).label('message_count')
         ).group_by(TelegramMessage.dialog_type).all()
 
-        # Convert to dictionary for easier template access
+        # Update dialog_counts dictionary initialization
         dialog_counts = {
             'total': 0,
             'private': {'count': 0, 'messages': 0},
+            'bot': {'count': 0, 'messages': 0},
             'group': {'count': 0, 'messages': 0},
-            'supergroup': {'count': 0, 'messages': 0},
             'channel': {'count': 0, 'messages': 0},
-            'unknown': {'count': 0, 'messages': 0},
-            'deleted_account': {'count': 0, 'messages': 0} #added for new dialog type
+            'public_supergroup': {'count': 0, 'messages': 0},
+            'private_supergroup': {'count': 0, 'messages': 0},
+            'deleted_account': {'count': 0, 'messages': 0},
+            'unknown': {'count': 0, 'messages': 0}
         }
 
         # Populate dialog counts
@@ -347,11 +355,13 @@ def index():
         dialog_counts = {
             'total': 0,
             'private': {'count': 0, 'messages': 0},
+            'bot': {'count': 0, 'messages': 0},
             'group': {'count': 0, 'messages': 0},
-            'supergroup': {'count': 0, 'messages': 0},
             'channel': {'count': 0, 'messages': 0},
-            'unknown': {'count': 0, 'messages': 0},
-            'deleted_account': {'count': 0, 'messages': 0} #added for new dialog type
+            'public_supergroup': {'count': 0, 'messages': 0},
+            'private_supergroup': {'count': 0, 'messages': 0},
+            'deleted_account': {'count': 0, 'messages': 0},
+            'unknown': {'count': 0, 'messages': 0}
         }
         last_update = None
 
