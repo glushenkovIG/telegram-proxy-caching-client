@@ -1,69 +1,37 @@
 import asyncio
 import os
-import logging
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Load config
-from config import Config
-
 async def main():
-    session_path = 'ton_collector_session.session'
+    """Interactive setup for Telegram client"""
+    print("Setting up Telegram client...")
+    api_id = input("Enter your Telegram API ID: ")
+    api_hash = input("Enter your Telegram API Hash: ")
 
-    if os.path.exists(session_path):
-        logger.info("Found existing session, attempting to use it...")
-        client = TelegramClient(session_path, 
-                              Config.TELEGRAM_API_ID, 
-                              Config.TELEGRAM_API_HASH)
+    client = TelegramClient('ton_collector_session', int(api_id), api_hash)
 
-        await client.connect()
+    await client.connect()
+    if not await client.is_user_authorized():
+        phone = input("Enter your phone number (with country code): ")
+        await client.send_code_request(phone)
+        code = input("Enter the code you received: ")
+        try:
+            await client.sign_in(phone, code)
+        except SessionPasswordNeededError:
+            password = input("Enter your 2FA password: ")
+            await client.sign_in(password=password)
 
-        if await client.is_user_authorized():
-            logger.info("Already authenticated")
-            me = await client.get_me()
-            logger.info(f"Logged in as: {me.first_name} (@{me.username})")
-        else:
-            logger.info("Session exists but unauthorized - starting authentication process")
-            await handle_authentication(client)
-    else:
-        logger.info("No existing session found - starting new authentication")
-        client = TelegramClient(session_path, 
-                              Config.TELEGRAM_API_ID, 
-                              Config.TELEGRAM_API_HASH)
-        await client.connect()
-        await handle_authentication(client)
+    print("Successfully authenticated! The collector can now run.")
 
-    # List available dialogs (channels, groups, users)
-    dialogs = await client.get_dialogs()
-    logger.info(f"Found {len(dialogs)} dialogs")
-
-    print("\nAvailable Telegram Channels:")
-    channels = [d for d in dialogs if d.is_channel]
-    for i, dialog in enumerate(channels[:20], 1):  # Show first 20 channels
-        print(f"{i}. {dialog.name} (ID: {dialog.id})")
+    # Save credentials to environment
+    os.environ["TELEGRAM_API_ID"] = api_id
+    os.environ["TELEGRAM_API_HASH"] = api_hash
+    print("Please add these to your Replit Secrets:")
+    print(f"TELEGRAM_API_ID = {api_id}")
+    print(f"TELEGRAM_API_HASH = {api_hash}")
 
     await client.disconnect()
-
-async def handle_authentication(client):
-    if not Config.TELEGRAM_PHONE:
-        phone = input("Enter your phone (with country code): ")
-    else:
-        phone = Config.TELEGRAM_PHONE
-
-    await client.send_code_request(phone)
-    code = input("Enter the code you received: ")
-
-    try:
-        await client.sign_in(phone, code)
-    except SessionPasswordNeededError:
-        password = input("Enter your 2FA password: ")
-        await client.sign_in(password=password)
-
-    logger.info("Successfully authenticated!")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "gunicorn --workers=4 --bind 0.0.0.0:5000 main:app"]
 
 [workflows]
-runButton = "Project"
+runButton = "Run Collector"
 
 [[workflows.workflow]]
 name = "Project"
@@ -86,6 +86,14 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Run Collector"
+author = 36288906
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 3000
