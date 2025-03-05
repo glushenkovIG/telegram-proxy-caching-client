@@ -76,11 +76,11 @@ async def collect_messages(custom_client=None):
 
                         latest_id = latest_msg.message_id if latest_msg else 0
                         
-                        # Use larger limit for TON channels
-                        message_limit = 200 if is_ton_dev else 100
+                        # Limit to 10 messages per channel for initial fetch
+                        message_limit = 10
                         logger.info(f"Collecting messages from {channel_title} (is_ton_dev={is_ton_dev}), limit={message_limit}")
 
-                        # Get new messages
+                        # Get only the 10 most recent messages, then track new ones on future runs
                         async for message in client.iter_messages(dialog, limit=message_limit):
                             if message.id <= latest_id:
                                 logger.debug(f"Skipping message {message.id} in {channel_title} - already processed")
@@ -162,8 +162,8 @@ async def main():
             if cycle_count % 5 == 0:
                 await check_database_status()
                 
-            logger.info("Collection complete, waiting 60 seconds...")
-            await asyncio.sleep(60)
+            logger.info("Collection complete, waiting 120 seconds...")
+            await asyncio.sleep(120)  # Longer interval between checks
         except Exception as e:
             logger.error(f"Error in main loop: {str(e)}")
             await asyncio.sleep(60)
