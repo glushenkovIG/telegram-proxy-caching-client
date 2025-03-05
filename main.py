@@ -318,9 +318,11 @@ def database_info():
 # Run the application
 if __name__ == "__main__":
     with app.app_context():
-        # Use existing tables
-        logger.info("Using existing database tables")
-        # Create tables if they don't exist
+        # Drop and recreate tables to ensure schema is up to date
+        logger.info("Recreating database tables to update schema")
+        # Drop all tables first
+        db.drop_all()
+        # Then create tables with updated schema
         db.create_all()
 
     # Start collector in a separate thread
