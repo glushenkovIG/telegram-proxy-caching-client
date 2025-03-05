@@ -4,6 +4,14 @@
 <div class="container mt-4">
   <h1>Telegram Messages</h1>
 
+  <!-- Daily Statistics Card -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Daily Statistics (Last 3 Days)</h5>
+      <div id="dailyStats">Loading...</div>
+    </div>
+  </div>
+
   <!-- Statistics Card -->
   <div class="card mb-4">
     <div class="card-body">
@@ -13,9 +21,9 @@
           <div class="mb-3">
             <h6>Message Counts:</h6>
             <ul class="list-unstyled">
-              <li>Total Messages: <strong>{{ all_count }}</strong></li>
-              <li>TON Dev Messages: <strong>{{ ton_count }}</strong></li>
-              <li>Regular Messages: <strong>{{ all_count - ton_count }}</strong></li>
+              <li>Total Messages: <strong id="totalMessages">{{ all_count }}</strong></li>
+              <li>TON Dev Messages: <strong id="tonMessages">{{ ton_count }}</strong></li>
+              <li>Regular Messages: <strong id="regularMessages">{{ all_count - ton_count }}</strong></li>
             </ul>
           </div>
         </div>
@@ -23,22 +31,22 @@
           <div class="mb-3">
             <h6>Message Types:</h6>
             <ul class="list-unstyled">
-              <li>Inbox Messages: <strong>{{ all_count - outbox_count }}</strong></li>
-              <li>Outbox Messages: <strong>{{ outbox_count }}</strong></li>
+              <li>Inbox Messages: <strong id="inboxMessages">{{ all_count - outbox_count }}</strong></li>
+              <li>Outbox Messages: <strong id="outboxMessages">{{ outbox_count }}</strong></li>
             </ul>
           </div>
         </div>
         <div class="col-md-4">
           <div class="mb-3">
             <h6>Dialog Types:</h6>
-            <ul class="list-unstyled">
+            <ul class="list-unstyled" id="dialogStats">
               <li>Total Dialogs: <strong>{{ dialog_counts['total'] }}</strong></li>
-              <li>Private Chats: <strong>{{ dialog_counts['private']['count'] }}</strong> ({{ dialog_counts['private']['messages'] }} messages)</li>
-              <li>Groups: <strong>{{ dialog_counts['group']['count'] }}</strong> ({{ dialog_counts['group']['messages'] }} messages)</li>
-              <li>Supergroups: <strong>{{ dialog_counts['supergroup']['count'] }}</strong> ({{ dialog_counts['supergroup']['messages'] }} messages)</li>
-              <li>Channels: <strong>{{ dialog_counts['channel']['count'] }}</strong> ({{ dialog_counts['channel']['messages'] }} messages)</li>
+              <li>Private Chats: <strong>{{ dialog_counts['private']['count'] }}</strong> (<span>{{ dialog_counts['private']['messages'] }}</span> messages)</li>
+              <li>Groups: <strong>{{ dialog_counts['group']['count'] }}</strong> (<span>{{ dialog_counts['group']['messages'] }}</span> messages)</li>
+              <li>Supergroups: <strong>{{ dialog_counts['supergroup']['count'] }}</strong> (<span>{{ dialog_counts['supergroup']['messages'] }}</span> messages)</li>
+              <li>Channels: <strong>{{ dialog_counts['channel']['count'] }}</strong> (<span>{{ dialog_counts['channel']['messages'] }}</span> messages)</li>
               {% if dialog_counts['unknown']['count'] > 0 %}
-              <li>Unknown Type: <strong>{{ dialog_counts['unknown']['count'] }}</strong> ({{ dialog_counts['unknown']['messages'] }} messages)</li>
+              <li>Unknown Type: <strong>{{ dialog_counts['unknown']['count'] }}</strong> (<span>{{ dialog_counts['unknown']['messages'] }}</span> messages)</li>
               {% endif %}
             </ul>
           </div>
@@ -96,6 +104,48 @@
 </div>
 
 <script>
+let lastUpdate = "{{ last_update }}";
+
+function updateStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(stats => {
+            // Update daily stats
+            const dailyStatsHtml = stats.map(day => `
+                <div class="border-bottom mb-2 pb-2">
+                    <h6>${day.date}</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small>Total: ${day.total_messages}</small>
+                        </div>
+                        <div class="col-md-4">
+                            <small>TON: ${day.ton_messages}</small>
+                        </div>
+                        <div class="col-md-4">
+                            <small>Regular: ${day.total_messages - day.ton_messages}</small>
+                        </div>
+                    </div>
+                    <div class="mt-1">
+                        <small>
+                            ${Object.entries(day.by_type)
+                                .map(([type, count]) => `${type}: ${count}`)
+                                .join(' | ')}
+                        </small>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('dailyStats').innerHTML = dailyStatsHtml;
+        })
+        .catch(error => console.error('Error updating stats:', error));
+}
+
+// Update stats every 10 seconds
+setInterval(updateStats, 10000);
+
+// Initial update
+updateStats();
+
   // Handle TON filter
   document.getElementById('tonOnlyToggle').addEventListener('change', function() {
     updateFilters();

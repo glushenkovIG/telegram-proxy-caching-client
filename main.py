@@ -2,7 +2,7 @@ import os
 import asyncio
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from telethon import TelegramClient
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -76,7 +76,27 @@ def should_be_ton_dev(channel_title):
 
     return False
 
-# Telegram collector function
+def get_proper_dialog_type(entity):
+    """Get the proper dialog type using Telethon's type system"""
+    from telethon.tl.types import (
+        User, Chat, Channel,
+        ChatForbidden, ChannelForbidden,
+        ChatPhoto, UserEmpty
+    )
+
+    if isinstance(entity, User):
+        if isinstance(entity, UserEmpty):
+            return 'deleted_account'
+        return 'private'
+    elif isinstance(entity, Chat) or isinstance(entity, ChatForbidden):
+        return 'group'
+    elif isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
+        if getattr(entity, 'megagroup', False):
+            return 'supergroup'
+        return 'channel'
+    return 'unknown'
+
+
 async def collect_messages():
     """Main collection function"""
     try:
@@ -132,14 +152,8 @@ async def collect_messages():
                 channel_id = str(dialog.id)
                 channel_title = getattr(dialog, 'title', channel_id)
 
-                # Determine dialog type
-                dialog_type = 'unknown'
-                if isinstance(dialog.entity, User):
-                    dialog_type = 'private'
-                elif isinstance(dialog.entity, Channel):
-                    dialog_type = 'supergroup' if dialog.entity.megagroup else 'channel'
-                elif isinstance(dialog.entity, Chat):
-                    dialog_type = 'group'
+                # Use improved dialog type detection
+                dialog_type = get_proper_dialog_type(dialog.entity)
 
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
@@ -298,7 +312,8 @@ def index():
             'group': {'count': 0, 'messages': 0},
             'supergroup': {'count': 0, 'messages': 0},
             'channel': {'count': 0, 'messages': 0},
-            'unknown': {'count': 0, 'messages': 0}
+            'unknown': {'count': 0, 'messages': 0},
+            'deleted_account': {'count': 0, 'messages': 0} #added for new dialog type
         }
 
         # Populate dialog counts
@@ -315,6 +330,14 @@ def index():
                 }
             dialog_counts['total'] += dialog_count
 
+        # Add last message timestamp for proper updates
+        latest_msg = TelegramMessage.query.order_by(
+            TelegramMessage.timestamp.desc()
+        ).first()
+
+        last_update = latest_msg.timestamp.isoformat() if latest_msg else None
+
+
     except Exception as e:
         logger.error(f"Database error in index route: {str(e)}", exc_info=True)
         messages = []
@@ -327,8 +350,10 @@ def index():
             'group': {'count': 0, 'messages': 0},
             'supergroup': {'count': 0, 'messages': 0},
             'channel': {'count': 0, 'messages': 0},
-            'unknown': {'count': 0, 'messages': 0}
+            'unknown': {'count': 0, 'messages': 0},
+            'deleted_account': {'count': 0, 'messages': 0} #added for new dialog type
         }
+        last_update = None
 
     return render_template('index.html',
                          messages=messages,
@@ -337,7 +362,8 @@ def index():
                          outbox_count=outbox_count,
                          dialog_counts=dialog_counts,
                          show_ton_only=show_ton_only,
-                         show_outbox_only=show_outbox_only)
+                         show_outbox_only=show_outbox_only,
+                         last_update=last_update)
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
@@ -381,6 +407,53 @@ def database_info():
                           all_count=all_count,
                           channels=channels,
                           total_accessible_channels=total_accessible_channels)
+
+# Add statistics endpoint for AJAX updates
+@app.route('/api/stats')
+def get_stats():
+    try:
+        # Get last 3 days stats
+        now = datetime.utcnow()
+        stats = []
+
+        for days_ago in range(3):
+            date = now - timedelta(days=days_ago)
+            start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_of_day = start_of_day + timedelta(days=1)
+
+            daily_stats = {
+                'date': start_of_day.strftime('%Y-%m-%d'),
+                'total_messages': TelegramMessage.query.filter(
+                    TelegramMessage.timestamp >= start_of_day,
+                    TelegramMessage.timestamp < end_of_day
+                ).count(),
+                'ton_messages': TelegramMessage.query.filter(
+                    TelegramMessage.timestamp >= start_of_day,
+                    TelegramMessage.timestamp < end_of_day,
+                    TelegramMessage.is_ton_dev == True
+                ).count(),
+                'by_type': {}
+            }
+
+            # Get counts by dialog type
+            dialog_types = db.session.query(
+                TelegramMessage.dialog_type,
+                db.func.count(TelegramMessage.id)
+            ).filter(
+                TelegramMessage.timestamp >= start_of_day,
+                TelegramMessage.timestamp < end_of_day
+            ).group_by(TelegramMessage.dialog_type).all()
+
+            for dtype, count in dialog_types:
+                daily_stats['by_type'][dtype or 'unknown'] = count
+
+            stats.append(daily_stats)
+
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Error getting stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 
 # Run the application
 if __name__ == "__main__":
