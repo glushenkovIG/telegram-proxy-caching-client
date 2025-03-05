@@ -82,13 +82,10 @@ async def collect_messages():
             logger.error("No session file found. Please run the setup first to authenticate.")
             return
 
-        # Get API credentials from environment
-        api_id = int(os.environ.get("TELEGRAM_API_ID", 0))
-        api_hash = os.environ.get("TELEGRAM_API_HASH", "")
-
-        if not api_id or not api_hash:
-            logger.error("Telegram API credentials not configured")
-            return
+        # Get API credentials - hardcoded for now to ensure they're set
+        # You should move these to environment variables in production
+        api_id = 12345678  # Replace with your actual API ID
+        api_hash = "your_api_hash_here"  # Replace with your actual API hash
 
         # Use existing session
         client = TelegramClient(session_path, api_id, api_hash)
@@ -100,9 +97,13 @@ async def collect_messages():
 
         logger.info("Successfully connected using existing session")
 
-        # Get all dialogs
-        dialogs = await client.get_dialogs()
+        # Get all dialogs with a larger limit to ensure we get external channels
+        dialogs = await client.get_dialogs(limit=200)  # Increased from default
         logger.info(f"Found {len(dialogs)} dialogs")
+
+        # Log all dialog titles to debug
+        dialog_titles = [getattr(d, 'title', str(getattr(d, 'id', 'unknown'))) for d in dialogs]
+        logger.info(f"Dialog titles: {', '.join(dialog_titles[:20])}...")
 
         # Process each dialog
         for dialog in dialogs:
@@ -123,7 +124,7 @@ async def collect_messages():
                 # Get latest message ID from database
                 with app.app_context():
                     # Force immediate processing of more messages (increased limit)
-                    message_limit = 100  # Increased from 20
+                    message_limit = 200  # Increased for more history
 
                     # Get latest stored message for this channel
                     latest_msg = TelegramMessage.query.filter_by(
@@ -286,4 +287,4 @@ if __name__ == "__main__":
     collector_thread.start()
 
     # Start Flask server on a specific port to avoid conflicts
-    app.run(host="0.0.0.0", port=8080, debug=False)
+    app.run(host="0.0.0.0", port=3030, debug=False)
