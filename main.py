@@ -84,22 +84,36 @@ def get_proper_dialog_type(entity):
         ChatPhoto, UserEmpty, Bot
     )
 
+    logger.info(f"Detecting type for entity: {type(entity)} with attributes: {dir(entity)}")
+
     if isinstance(entity, User):
         if getattr(entity, 'bot', False):
             return 'bot'
-        if isinstance(entity, UserEmpty):
+        if getattr(entity, 'deleted', False) or isinstance(entity, UserEmpty):
             return 'deleted_account'
         return 'private'
     elif isinstance(entity, Chat) or isinstance(entity, ChatForbidden):
         return 'group'
     elif isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
-        if getattr(entity, 'broadcast', False):
+        try:
+            # Log detailed attributes for debugging
+            broadcast = getattr(entity, 'broadcast', False)
+            megagroup = getattr(entity, 'megagroup', False)
+            username = getattr(entity, 'username', None)
+            logger.info(f"Channel attributes - broadcast: {broadcast}, megagroup: {megagroup}, username: {username}")
+
+            if broadcast and not megagroup:
+                return 'channel'
+            elif megagroup:
+                if username:
+                    return 'public_supergroup'
+                return 'private_supergroup'
             return 'channel'
-        if getattr(entity, 'megagroup', False):
-            if getattr(entity, 'username', None):
-                return 'public_supergroup'
-            return 'private_supergroup'
-        return 'channel'  # Default to channel if unclear
+        except Exception as e:
+            logger.error(f"Error detecting channel type: {str(e)}")
+            return 'channel'  # Default to channel if detection fails
+
+    logger.warning(f"Unknown entity type: {type(entity)}")
     return 'unknown'
 
 
@@ -111,10 +125,13 @@ async def collect_messages():
             logger.error("No session file found. Please run the setup first to authenticate.")
             return
 
-        # Get API credentials - hardcoded for now to ensure they're set
-        # You should move these to environment variables in production
-        api_id = 12345678  # Replace with your actual API ID
-        api_hash = "your_api_hash_here"  # Replace with your actual API hash
+        # Get API credentials from environment
+        api_id = os.environ.get('TELEGRAM_API_ID')
+        api_hash = os.environ.get('TELEGRAM_API_HASH')
+
+        if not api_id or not api_hash:
+            logger.error("Missing API credentials in environment variables")
+            return
 
         # Use existing session
         client = TelegramClient(session_path, api_id, api_hash)
@@ -138,15 +155,11 @@ async def collect_messages():
         logger.info("Successfully connected using existing session")
 
         # Get all dialogs with a larger limit to ensure we get external channels
-        dialogs = await client.get_dialogs(limit=200)  # Increased from default
+        dialogs = await client.get_dialogs(limit=200)
         logger.info(f"Found {len(dialogs)} dialogs")
 
         # Store the total accessible channels count for later use
         app.total_accessible_channels = len(dialogs)
-
-        # Log all dialog titles to debug
-        dialog_titles = [getattr(d, 'title', str(getattr(d, 'id', 'unknown'))) for d in dialogs]
-        logger.info(f"Dialog titles: {', '.join(dialog_titles[:20])}...")
 
         # Process each dialog
         for dialog in dialogs:
@@ -158,8 +171,9 @@ async def collect_messages():
                 channel_id = str(dialog.id)
                 channel_title = getattr(dialog, 'title', channel_id)
 
-                # Use improved dialog type detection
+                # Use improved dialog type detection with logging
                 dialog_type = get_proper_dialog_type(dialog.entity)
+                logger.info(f"Dialog {channel_title} detected as type: {dialog_type}")
 
                 # Check if it's a TON Dev channel
                 is_ton_dev = should_be_ton_dev(channel_title)
@@ -170,7 +184,7 @@ async def collect_messages():
                 # Get latest message ID from database
                 with app.app_context():
                     # Force immediate processing of more messages (increased limit)
-                    message_limit = 200  # Increased for more history
+                    message_limit = 200
 
                     # Get latest stored message for this channel
                     latest_msg = TelegramMessage.query.filter_by(
