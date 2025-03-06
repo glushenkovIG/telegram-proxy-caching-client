@@ -79,7 +79,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "FLASK_ENV=production gunicorn -w 4 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level info --access-logfile - --error-logfile - --preload"
+args = "FLASK_ENV=production gunicorn -w 4 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level debug --access-logfile - --error-logfile - --preload"
 waitForPort = 5000
 
 [[ports]]
