@@ -152,8 +152,8 @@ async def collect_messages():
 
         while True:  # Continuous collection loop
             try:
-                # Get all dialogs
-                dialogs = await client.get_dialogs(limit=200)
+                # Get all dialogs without caching
+                dialogs = await client.get_dialogs(limit=200, cache=False)
                 logger.info(f"Found {len(dialogs)} dialogs")
 
                 # Process each dialog
@@ -181,6 +181,8 @@ async def collect_messages():
 
                             # Process new messages with smaller batch size
                             async for message in client.iter_messages(dialog, limit=20):
+                                logger.debug(f"Found message {message.id} from {channel_title} with date {message.date}")
+
                                 if message.id <= latest_id and latest_id != 0:
                                     continue  # Skip processed messages
 
@@ -201,7 +203,7 @@ async def collect_messages():
                                         )
                                         db.session.add(new_msg)
                                         db.session.commit()
-                                        logger.debug(f"Saved message {message.id} from {channel_title}")
+                                        logger.info(f"Saved new message {message.id} from {channel_title} at {message.date}")
                                     except Exception as e:
                                         logger.error(f"Error saving message: {str(e)}")
                                         db.session.rollback()
@@ -399,46 +401,80 @@ def get_stats():
 
             daily_stats = {
                 'date': start_of_day.strftime('%Y-%m-%d'),
-                'total_messages': 0,
-                'ton_messages': 0,
-                'by_type': {}
-            }
-            
-            # Safely get counts with error handling
-            try:
-                daily_stats['total_messages'] = TelegramMessage.query.filter(
+                'total_messages': TelegramMessage.query.filter(
                     TelegramMessage.timestamp >= start_of_day,
                     TelegramMessage.timestamp < end_of_day
-                ).count()
-                
-                daily_stats['ton_messages'] = TelegramMessage.query.filter(
+                ).count(),
+                'ton_messages': TelegramMessage.query.filter(
                     TelegramMessage.timestamp >= start_of_day,
                     TelegramMessage.timestamp < end_of_day,
                     TelegramMessage.is_ton_dev == True
-                ).count()
-                
-                # Get counts by dialog type
-                dialog_types = db.session.query(
-                    TelegramMessage.dialog_type,
-                    db.func.count(TelegramMessage.id)
-                ).filter(
-                    TelegramMessage.timestamp >= start_of_day,
-                    TelegramMessage.timestamp < end_of_day
-                ).group_by(TelegramMessage.dialog_type).all()
+                ).count(),
+                'by_type': {}
+            }
 
-                for dtype, count in dialog_types:
-                    daily_stats['by_type'][dtype or 'unknown'] = count
-            except Exception as inner_e:
-                logger.error(f"Error collecting daily stats: {str(inner_e)}")
-                # Don't fail the whole request, just log the error
+            # Get counts by dialog type
+            dialog_types = db.session.query(
+                TelegramMessage.dialog_type,
+                db.func.count(TelegramMessage.id)
+            ).filter(
+                TelegramMessage.timestamp >= start_of_day,
+                TelegramMessage.timestamp < end_of_day
+            ).group_by(TelegramMessage.dialog_type).all()
+
+            for dtype, count in dialog_types:
+                daily_stats['by_type'][dtype or 'unknown'] = count
 
             stats.append(daily_stats)
 
         return jsonify(stats)
     except Exception as e:
-        logger.error(f"Error getting stats: {str(e)}", exc_info=True)
-        return jsonify({'error': str(e), 'status': 'error'}), 200  # Return 200 to avoid CORS issues
+        logger.error(f"Error getting stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/collector-status')
+def collector_status():
+    try:
+        # Get the most recent message timestamp
+        latest_msg = TelegramMessage.query.order_by(
+            TelegramMessage.timestamp.desc()
+        ).first()
+
+        if not latest_msg:
+            return jsonify({
+                'status': 'inactive',
+                'last_message_time': None
+            })
+
+        # Calculate time since last message
+        now = datetime.utcnow()
+        minutes_since_last = int((now - latest_msg.timestamp).total_seconds() / 60)
+
+        # Get count of messages in the last hour
+        recent_messages = TelegramMessage.query.filter(
+            TelegramMessage.timestamp >= now - timedelta(hours=1)
+        ).count()
+
+        # Determine collector status
+        if minutes_since_last <= 60:  # Within last hour
+            status = 'active'
+        else:
+            status = 'inactive'
+
+        return jsonify({
+            'status': status,
+            'recent_messages': recent_messages,
+            'minutes_since_last': minutes_since_last,
+            'last_message_time': latest_msg.timestamp.isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Error in collector status: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 # Run the application
 if __name__ == "__main__":
@@ -465,36 +501,3 @@ if __name__ == "__main__":
         pass
     else:
         app.run(host="0.0.0.0", port=5000, debug=False)
-
-@app.route('/api/collector-status')
-def collector_status():
-    """Check collector status"""
-    try:
-        # Count messages in the last hour to see if collector is working
-        now = datetime.utcnow()
-        one_hour_ago = now - timedelta(hours=1)
-        
-        recent_messages = TelegramMessage.query.filter(
-            TelegramMessage.timestamp >= one_hour_ago
-        ).count()
-        
-        # Get latest message timestamp
-        latest_msg = TelegramMessage.query.order_by(
-            TelegramMessage.timestamp.desc()
-        ).first()
-        
-        last_message_time = latest_msg.timestamp if latest_msg else None
-        time_since_last = None
-        
-        if last_message_time:
-            time_since_last = (now - last_message_time).total_seconds() / 60  # minutes
-        
-        return jsonify({
-            'status': 'active' if recent_messages > 0 else 'inactive',
-            'recent_messages': recent_messages,
-            'last_message_time': last_message_time.isoformat() if last_message_time else None,
-            'minutes_since_last': round(time_since_last, 1) if time_since_last else None
-        })
-    except Exception as e:
-        logger.error(f"Error checking collector status: {str(e)}")
-        return jsonify({'status': 'error', 'error': str(e)}), 500
