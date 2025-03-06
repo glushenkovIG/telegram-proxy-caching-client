@@ -7,6 +7,72 @@
   <!-- Daily Statistics Card -->
   <div class="card mb-4">
     <div class="card-body">
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Collector Status</h5>
+    <div id="collector-status">
+      <div class="d-flex align-items-center">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <span>Checking collector status...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function checkCollectorStatus() {
+  fetch('/api/collector-status')
+    .then(response => response.json())
+    .then(data => {
+      const statusDiv = document.getElementById('collector-status');
+      if (data.status === 'active') {
+        statusDiv.innerHTML = `
+          <div class="d-flex align-items-center">
+            <div class="bg-success rounded-circle me-2" style="width: 10px; height: 10px;"></div>
+            <span>Collector active - ${data.recent_messages} messages in the last hour</span>
+          </div>
+          <small class="text-muted">Last message: ${data.minutes_since_last} minutes ago</small>`;
+      } else if (data.status === 'inactive') {
+        statusDiv.innerHTML = `
+          <div class="d-flex align-items-center">
+            <div class="bg-warning rounded-circle me-2" style="width: 10px; height: 10px;"></div>
+            <span>Collector inactive - No messages in the last hour</span>
+          </div>
+          <small class="text-muted">Last message: ${data.last_message_time || 'Never'}</small>
+          <div class="mt-2">
+            <button class="btn btn-sm btn-primary" onclick="restartCollector()">Restart Collector</button>
+          </div>`;
+      } else {
+        statusDiv.innerHTML = `
+          <div class="d-flex align-items-center">
+            <div class="bg-danger rounded-circle me-2" style="width: 10px; height: 10px;"></div>
+            <span>Collector error: ${data.error || 'Unknown error'}</span>
+          </div>`;
+      }
+    })
+    .catch(error => {
+      document.getElementById('collector-status').innerHTML = `
+        <div class="d-flex align-items-center">
+          <div class="bg-danger rounded-circle me-2" style="width: 10px; height: 10px;"></div>
+          <span>Error checking collector status</span>
+        </div>`;
+    });
+}
+
+function restartCollector() {
+  // This would need server-side implementation
+  alert('This feature requires server-side implementation.');
+}
+
+// Check status on page load
+checkCollectorStatus();
+// Check every 30 seconds
+setInterval(checkCollectorStatus, 30000);
+</script>
+
       <h5 class="card-title">Daily Statistics (Last 3 Days)</h5>
       <div id="dailyStats">Loading...</div>
     </div>
@@ -62,6 +128,7 @@
 
   <!-- Filters Card -->
   <div class="card mb-4">
+    <div class="alert alert-danger d-none" id="stats-error"></div>
     <div class="card-body">
       <h5 class="card-title">Message Filters</h5>
       <div class="row align-items-center">
@@ -110,13 +177,27 @@
 
 <script>
 let lastUpdate = "{{ last_update }}";
+let errorCount = 0;
 
 function updateStats() {
     fetch('/api/stats')
         .then(response => response.json())
-        .then(stats => {
+        .then(data => {
+            if (data.error) {
+                console.error("Stats API returned error:", data.error);
+                errorCount++;
+                if (errorCount > 3) {
+                    document.getElementById('stats-error').classList.remove('d-none');
+                    document.getElementById('stats-error').innerText = `Error updating stats: ${data.error}`;
+                }
+                return;
+            }
+            
+            errorCount = 0;
+            document.getElementById('stats-error').classList.add('d-none');
+            
             // Update daily stats
-            const dailyStatsHtml = stats.map(day => `
+            const dailyStatsHtml = data.map(day => `
                 <div class="border-bottom mb-2 pb-2">
                     <h6>${day.date}</h6>
                     <div class="row">
