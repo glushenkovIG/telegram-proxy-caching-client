@@ -528,7 +528,7 @@ if __name__ == "__main__":
 
     # Start collector in a separate thread if not running in reloader
     if not is_running_from_reloader():
-        logger.info("Starting simplified Telegram collector")
+        logger.info("Starting collector thread in production mode")
         collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
         collector_thread.start()
 
