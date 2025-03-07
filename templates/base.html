@@ -10,13 +10,13 @@
     <!-- Custom styles -->
     <style>
         body {
-            background-color: #121212;
-            color: #e1e1e1;
+            background-color: #f8f9fa;
+            color: #333;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .navbar {
-            background-color: #1e1e1e;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background-color: #0088cc;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .navbar-brand {
             font-weight: bold;
@@ -27,41 +27,48 @@
             padding-bottom: 40px;
         }
         .card {
-            background-color: #1e1e1e;
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-            border: 1px solid #333;
+            border: 1px solid #e6e6e6;
         }
         .card-header {
-            background-color: #252525;
-            border-bottom: 1px solid #333;
+            background-color: #f7f7f7;
+            border-bottom: 1px solid #e6e6e6;
             font-weight: bold;
-            color: #e1e1e1;
+            color: #333;
         }
         .card-body {
-            color: #e1e1e1;
+            color: #333;
         }
         .badge.bg-primary {
             background-color: #0088cc !important;
         }
+        .badge.bg-secondary {
+            background-color: #6c757d !important;
+        }
         .timestamp {
-            color: #9e9e9e;
+            color: #6c757d;
             font-size: 0.85rem;
         }
         .text-muted {
-            color: #9e9e9e !important;
+            color: #6c757d !important;
         }
         h1, .display-4 {
-            color: #ffffff;
+            color: #333;
         }
         .lead {
-            color: #b0b0b0;
+            color: #6c757d;
         }
         
-        /* New styles for improved UI */
+        /* Stat cards */
         .stat-card {
             height: 100%;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
         .stats-container {
             display: flex;
@@ -82,7 +89,7 @@
         .stat-label {
             display: block;
             font-size: 0.9rem;
-            color: #9e9e9e;
+            color: #6c757d;
         }
         .top-channels {
             margin-bottom: 10px;
@@ -91,7 +98,7 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #e6e6e6;
         }
         .channel-item:last-child {
             border-bottom: none;
@@ -110,17 +117,17 @@
         }
         .message-count {
             font-size: 0.85rem;
-            color: #9e9e9e;
+            color: #6c757d;
         }
         .message-table, .channel-table {
             margin-bottom: 0;
         }
         .message-table th, .channel-table th {
-            background-color: #252525;
-            border-color: #333;
+            background-color: #f7f7f7;
+            border-color: #e6e6e6;
         }
         .message-table td, .channel-table td {
-            border-color: #333;
+            border-color: #e6e6e6;
             vertical-align: middle;
         }
         .channel-cell {
@@ -152,6 +159,29 @@
             background-color: #0088cc;
             color: white;
         }
+        /* Search box */
+        .search-box {
+            margin-bottom: 20px;
+        }
+        /* Leaderboard */
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e6e6e6;
+        }
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        .leaderboard-rank {
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 30px;
+        }
+        .leaderboard-count {
+            font-weight: 500;
+            color: #0088cc;
+        }
     </style>
 </head>
 <body>
@@ -165,6 +195,12 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#statistics">Statistics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#leaderboard">Leaderboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#channel-list">Channels</a>

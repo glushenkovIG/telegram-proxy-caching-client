@@ -9,12 +9,29 @@
     </div>
   </div>
 
-  <!-- Statistics Section -->
+  <!-- Search Section -->
   <div class="row mb-4">
+    <div class="col-12">
+      <div class="card search-box">
+        <div class="card-body">
+          <form method="get" action="/" class="d-flex">
+            <input type="text" name="search" class="form-control me-2" placeholder="Search message content..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if search_query %}
+              <a href="/" class="btn btn-outline-secondary ms-2">Clear</a>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="row mb-4" id="statistics">
     <div class="col-md-6">
       <div class="card stat-card">
+        <div class="card-header">Overall Statistics</div>
         <div class="card-body">
-          <h5 class="card-title">Message Statistics</h5>
           <div class="stats-container">
             <div class="stat-item">
               <span class="stat-value">{{ all_count }}</span>
@@ -34,19 +51,90 @@
     </div>
     <div class="col-md-6">
       <div class="card stat-card">
+        <div class="card-header">Last 3 Days Activity</div>
         <div class="card-body">
-          <h5 class="card-title">Top Channels</h5>
-          <div class="top-channels">
-            {% for channel in channels[:5] %}
-            <div class="channel-item">
-              <span class="channel-name">{{ channel.channel_title }}</span>
-              <div class="channel-stats">
-                <span class="message-count">{{ channel.count }} msgs</span>
-                {% if channel.is_ton_dev %}
-                <span class="badge bg-primary">TON DEV</span>
-                {% endif %}
-              </div>
+          <div class="stats-container">
+            <div class="stat-item">
+              <span class="stat-value">{{ last_3_days_count }}</span>
+              <span class="stat-label">Total Messages</span>
             </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ last_3_days_sent }}</span>
+              <span class="stat-label">Sent</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ last_3_days_received }}</span>
+              <span class="stat-label">Received</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Section -->
+  <div class="row mb-4" id="leaderboard">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Top Senders (Last 3 Days)</div>
+        <div class="card-body">
+          {% if senders_leaderboard %}
+            {% for item in senders_leaderboard %}
+              <div class="leaderboard-item">
+                <div>
+                  <span class="leaderboard-rank">#{{ loop.index }}</span>
+                  <span class="channel-name">{{ item.channel_title }}</span>
+                </div>
+                <span class="leaderboard-count">{{ item.count }} sent</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted text-center">No data available</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Top Receivers (Last 3 Days)</div>
+        <div class="card-body">
+          {% if receivers_leaderboard %}
+            {% for item in receivers_leaderboard %}
+              <div class="leaderboard-item">
+                <div>
+                  <span class="leaderboard-rank">#{{ loop.index }}</span>
+                  <span class="channel-name">{{ item.channel_title }}</span>
+                </div>
+                <span class="leaderboard-count">{{ item.count }} received</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted text-center">No data available</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Channels Section -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">Top Channels</div>
+        <div class="card-body">
+          <div class="row">
+            {% for channel in channels[:6] %}
+              <div class="col-md-4 mb-3">
+                <div class="channel-item">
+                  <span class="channel-name">{{ channel.channel_title }}</span>
+                  <div class="channel-stats">
+                    <span class="message-count">{{ channel.count }} msgs</span>
+                    {% if channel.is_ton_dev %}
+                      <span class="badge bg-primary">TON DEV</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
             {% endfor %}
           </div>
           <div class="text-center mt-2">
@@ -62,7 +150,13 @@
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Recent Messages ({{ messages|length }} of {{ all_count }})</h5>
+          <h5 class="mb-0">
+            {% if search_query %}
+              Search Results for "{{ search_query }}" ({{ messages|length }} results)
+            {% else %}
+              Recent Messages ({{ messages|length }} of {{ all_count }})
+            {% endif %}
+          </h5>
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" id="showMetadata">
             <label class="form-check-label" for="showMetadata">Show Metadata</label>
@@ -78,6 +172,7 @@
                   <th>Time</th>
                   <th class="metadata-column">ID</th>
                   <th class="metadata-column">Type</th>
+                  <th class="metadata-column">Direction</th>
                   <th class="metadata-column">TON Dev</th>
                 </tr>
               </thead>
@@ -93,6 +188,13 @@
                     <td class="metadata-column">{{ message.message_id }}</td>
                     <td class="metadata-column">{{ message.dialog_type }}</td>
                     <td class="metadata-column">
+                      {% if message.is_outgoing %}
+                      <span class="badge bg-info">Sent</span>
+                      {% else %}
+                      <span class="badge bg-success">Received</span>
+                      {% endif %}
+                    </td>
+                    <td class="metadata-column">
                       {% if message.is_ton_dev %}
                       <span class="badge bg-primary">Yes</span>
                       {% else %}
@@ -103,10 +205,15 @@
                   {% endfor %}
                 {% else %}
                   <tr>
-                    <td colspan="6" class="text-center p-4">
+                    <td colspan="7" class="text-center p-4">
                       <div class="alert alert-info mb-0">
-                        <h4 class="alert-heading">Server is running!</h4>
-                        <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
+                        {% if search_query %}
+                          <h4 class="alert-heading">No results found</h4>
+                          <p>No messages match your search query. Try a different search term.</p>
+                        {% else %}
+                          <h4 class="alert-heading">Server is running!</h4>
+                          <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
+                        {% endif %}
                       </div>
                     </td>
                   </tr>
@@ -175,10 +282,12 @@
       });
     });
 
-    // Auto-refresh the page every 60 seconds
+    // Auto-refresh the page every 60 seconds if no search is active
+    {% if not search_query %}
     setTimeout(function() {
       window.location.reload();
     }, 60000);
+    {% endif %}
   </script>
 </div>
 {% endblock %}

@@ -1,18 +1,33 @@
 
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from app import app, db, logger
 from models import TelegramMessage
 from collector import ensure_single_collector
 import atexit
 import os
+from datetime import datetime, timedelta
+from sqlalchemy import func, desc
 
 @app.route('/')
 def index():
+    # Get search query if exists
+    search_query = request.args.get('search', '')
+    
     # Fetch data for combined view
     messages = []
     all_count = 0
     ton_count = 0
     channels = []
+    
+    # Last 3 days statistics
+    three_days_ago = datetime.utcnow() - timedelta(days=3)
+    last_3_days_count = 0
+    last_3_days_sent = 0
+    last_3_days_received = 0
+    
+    # Leaderboard data
+    senders_leaderboard = []
+    receivers_leaderboard = []
     
     try:
         # Get total message count
@@ -28,10 +43,43 @@ def index():
             db.func.bool_or(TelegramMessage.is_ton_dev).label('is_ton_dev')
         ).group_by(TelegramMessage.channel_title).order_by(db.desc('count')).all()
         
-        # Get the 100 most recent messages
-        messages = db.session.query(TelegramMessage).order_by(
-            TelegramMessage.timestamp.desc()
-        ).limit(100).all()
+        # Get 3-day statistics
+        last_3_days_count = db.session.query(TelegramMessage).filter(
+            TelegramMessage.timestamp >= three_days_ago
+        ).count()
+        
+        last_3_days_sent = db.session.query(TelegramMessage).filter(
+            TelegramMessage.timestamp >= three_days_ago,
+            TelegramMessage.is_outgoing == True
+        ).count()
+        
+        last_3_days_received = last_3_days_count - last_3_days_sent
+        
+        # Get senders leaderboard (channels with most outgoing messages in last 3 days)
+        senders_leaderboard = db.session.query(
+            TelegramMessage.channel_title,
+            db.func.count(TelegramMessage.id).label('count')
+        ).filter(
+            TelegramMessage.timestamp >= three_days_ago,
+            TelegramMessage.is_outgoing == True
+        ).group_by(TelegramMessage.channel_title).order_by(db.desc('count')).limit(5).all()
+        
+        # Get receivers leaderboard (channels with most incoming messages in last 3 days)
+        receivers_leaderboard = db.session.query(
+            TelegramMessage.channel_title,
+            db.func.count(TelegramMessage.id).label('count')
+        ).filter(
+            TelegramMessage.timestamp >= three_days_ago,
+            TelegramMessage.is_outgoing == False
+        ).group_by(TelegramMessage.channel_title).order_by(db.desc('count')).limit(5).all()
+        
+        # Get messages with search applied if search query exists
+        query = db.session.query(TelegramMessage).order_by(TelegramMessage.timestamp.desc())
+        
+        if search_query:
+            query = query.filter(TelegramMessage.content.ilike(f'%{search_query}%'))
+        
+        messages = query.limit(100).all()
         
         logger.info(f"Loaded {len(messages)} messages and {len(channels)} channels for display")
     except Exception as e:
@@ -41,7 +89,13 @@ def index():
                           messages=messages, 
                           all_count=all_count,
                           ton_count=ton_count,
-                          channels=channels)
+                          channels=channels,
+                          last_3_days_count=last_3_days_count,
+                          last_3_days_sent=last_3_days_sent,
+                          last_3_days_received=last_3_days_received,
+                          senders_leaderboard=senders_leaderboard,
+                          receivers_leaderboard=receivers_leaderboard,
+                          search_query=search_query)
 
 @app.route('/status')
 def status():
