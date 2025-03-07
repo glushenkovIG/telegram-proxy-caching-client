@@ -95,8 +95,8 @@ async def import_eacc_messages():
         logger.info(f"Latest message ID in EACC database: {latest_id}")
 
             # Batch size for processing messages
-            batch_size = 100 # Increased batch size
-            total_imported = 0
+        batch_size = 100 # Increased batch size
+        total_imported = 0
             total_messages_estimate = 107000  # Total messages in the chat
 
             # Calculate time estimates
