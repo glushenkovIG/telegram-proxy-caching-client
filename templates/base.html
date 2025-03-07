@@ -1,33 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TON Dev Messages</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">TON Dev Messages</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">All Messages</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/?ton_dev=1">TON Dev Messages</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/channels">Channels</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    <div class="container mt-4">
-        {% block content %}{% endblock %}
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block content %}{% endblock %}
 </body>
 </html>

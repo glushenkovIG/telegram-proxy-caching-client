@@ -15,10 +15,6 @@ name = "Project"
 mode = "parallel"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Web Server"
-
 [[workflows.workflow]]
 name = "Run App"
 author = 36288906
@@ -66,21 +62,6 @@ author = 36288906
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-
-[[workflows.workflow]]
-name = "Web Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
 
 [[ports]]
 localPort = 3000
