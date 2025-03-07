@@ -2,9 +2,10 @@ import os
 import asyncio
 import logging
 import random
+import sqlite3
 from datetime import datetime, timedelta
 from telethon import TelegramClient
-from app import app, db
+from app import app
 from models import TelegramMessage
 from utils import get_proper_dialog_type
 
@@ -18,6 +19,31 @@ logger = logging.getLogger('eacc_importer')
 async def import_eacc_messages():
     """Import messages from EACC channel"""
     client = None
+    eacc_db_path = 'instance/eacc_messages.db'
+    
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(eacc_db_path), exist_ok=True)
+    
+    # Initialize the separate database
+    conn = sqlite3.connect(eacc_db_path)
+    cursor = conn.cursor()
+    
+    # Create table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS telegram_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id INTEGER NOT NULL,
+        channel_id TEXT NOT NULL,
+        channel_title TEXT,
+        content TEXT,
+        timestamp TIMESTAMP,
+        is_ton_dev BOOLEAN DEFAULT 0,
+        is_outgoing BOOLEAN DEFAULT 0,
+        dialog_type TEXT
+    )
+    ''')
+    conn.commit()
+    
     try:
         logger.info("Starting EACC chat import process")
         session_path = 'ton_collector_session.session'
@@ -58,13 +84,13 @@ async def import_eacc_messages():
         logger.info(f"Found chat: {channel_title} with ID: {channel_id}")
 
         # Get latest stored message ID for this channel
-        with app.app_context():
-            latest_msg = TelegramMessage.query.filter_by(
-                channel_id=channel_id
-            ).order_by(TelegramMessage.message_id.desc()).first()
-
-            latest_id = latest_msg.message_id if latest_msg else 0
-            logger.info(f"Latest message ID in database: {latest_id}")
+        cursor.execute(
+            "SELECT message_id FROM telegram_messages WHERE channel_id = ? ORDER BY message_id DESC LIMIT 1",
+            (channel_id,)
+        )
+        result = cursor.fetchone()
+        latest_id = result[0] if result else 0
+        logger.info(f"Latest message ID in EACC database: {latest_id}")
 
             # Batch size for processing messages
             batch_size = 100 # Increased batch size
@@ -136,8 +162,25 @@ async def import_eacc_messages():
                                 
                                 while retry_count < max_retries:
                                     try:
-                                        db.session.add_all(messages_to_process)
-                                        db.session.commit()
+                                        for msg in messages_to_process:
+                                            cursor.execute(
+                                                """
+                                                INSERT INTO telegram_messages 
+                                                (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type)
+                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                                """,
+                                                (
+                                                    msg.message_id, 
+                                                    msg.channel_id, 
+                                                    msg.channel_title, 
+                                                    msg.content, 
+                                                    msg.timestamp, 
+                                                    msg.is_ton_dev, 
+                                                    msg.is_outgoing, 
+                                                    msg.dialog_type
+                                                )
+                                            )
+                                        conn.commit()
                                         total_imported += len(messages_to_process)
                                         logger.info(f"Saved {len(messages_to_process)} messages, total so far: {total_imported}")
                                         messages_to_process = []
@@ -149,10 +192,8 @@ async def import_eacc_messages():
                                             await asyncio.sleep(retry_delay)
                                             # Exponential backoff with jitter
                                             retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
-                                            db.session.rollback()  # Roll back the current transaction
                                         else:
                                             logger.error(f"Error saving messages: {str(e)}")
-                                            db.session.rollback()
                                             break
                                 
                                 if retry_count >= max_retries:
@@ -190,8 +231,25 @@ async def import_eacc_messages():
                 
                 while retry_count < max_retries:
                     try:
-                        db.session.add_all(messages_to_process)
-                        db.session.commit()
+                        for msg in messages_to_process:
+                            cursor.execute(
+                                """
+                                INSERT INTO telegram_messages 
+                                (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (
+                                    msg.message_id, 
+                                    msg.channel_id, 
+                                    msg.channel_title, 
+                                    msg.content, 
+                                    msg.timestamp, 
+                                    msg.is_ton_dev, 
+                                    msg.is_outgoing, 
+                                    msg.dialog_type
+                                )
+                            )
+                        conn.commit()
                         total_imported += len(messages_to_process)
                         break
                     except Exception as e:
@@ -200,10 +258,8 @@ async def import_eacc_messages():
                             logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
                             await asyncio.sleep(retry_delay)
                             retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
-                            db.session.rollback()
                         else:
                             logger.error(f"Error saving final messages batch: {str(e)}")
-                            db.session.rollback()
                             break
                 
                 if retry_count >= max_retries:
@@ -217,11 +273,15 @@ async def import_eacc_messages():
         if client:
             await client.disconnect()
             logger.info("Disconnected Telegram client")
+        
+        # Close the database connection
+        if 'conn' in locals() and conn:
+            conn.close()
+            logger.info("Closed EACC database connection")
 
 def run_importer():
     """Run the importer"""
-    with app.app_context():
-        asyncio.run(import_eacc_messages())
+    asyncio.run(import_eacc_messages())
 
 if __name__ == "__main__":
     run_importer()
