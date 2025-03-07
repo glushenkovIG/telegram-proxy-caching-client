@@ -11,8 +11,11 @@ from telethon.tl.types import Channel, Chat, User
 from werkzeug.serving import is_running_from_reloader
 from collector import ensure_single_collector
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG for more info
+# Configure logging with more detail
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Initialize database base class
@@ -21,15 +24,20 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 
-# Create Flask app
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///messages.db")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
-db.init_app(app)
+try:
+    # Create Flask app
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///messages.db")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
+    db.init_app(app)
+
+except Exception as e:
+    logger.error(f"Error during Flask app initialization: {str(e)}", exc_info=True)
+    raise
 
 # Define model
 class TelegramMessage(db.Model):
@@ -367,16 +375,17 @@ if __name__ == "__main__":
                 db.create_all()
 
         except Exception as e:
-            logger.error(f"Database setup error: {str(e)}")
+            logger.error(f"Database setup error: {str(e)}", exc_info=True)
+            raise
 
-    # Start collector in a separate thread if not running in reloader
-    if not is_running_from_reloader():
-        logger.info("Starting collector thread in production mode")
-        ensure_single_collector()
+    # Temporarily disable collector thread for debugging
+    # if not is_running_from_reloader():
+    #     logger.info("Starting collector thread in production mode")
+    #     ensure_single_collector()
 
     # Start the Flask server
-    if os.environ.get('FLASK_ENV') == 'production':
-        # Let gunicorn handle the server
-        pass
-    else:
-        app.run(host="0.0.0.0", port=5000, debug=False)
+    try:
+        app.run(host="0.0.0.0", port=5000, debug=True)
+    except Exception as e:
+        logger.error(f"Flask server error: {str(e)}", exc_info=True)
+        raise

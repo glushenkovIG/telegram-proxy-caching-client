@@ -19,58 +19,65 @@ async def collect_messages():
     try:
         session_path = 'ton_collector_session.session'
 
-        # Get API credentials from environment
-        api_id = os.environ.get('TELEGRAM_API_ID')
-        api_hash = os.environ.get('TELEGRAM_API_HASH')
-
-        if not api_id or not api_hash:
-            logger.error("Missing API credentials in environment variables")
+        # Check if session exists
+        if not os.path.exists(session_path):
+            logger.error("Session file not found. Please run setup first")
             return
 
-        # Use existing session
-        client = TelegramClient(session_path, api_id, api_hash)
-        await client.connect()
+        # Use existing session without requiring API credentials
+        try:
+            # Initialize client with dummy values when reusing session
+            client = TelegramClient(
+                session_path,
+                api_id=1,  # Dummy value, not used with existing session
+                api_hash='dummy',  # Dummy value, not used with existing session
+                system_version="4.16.30-vxCUSTOM"
+            )
+            await client.connect()
 
-        if not await client.is_user_authorized():
-            logger.error("Session unauthorized. Please run setup first")
-            return
+            if not await client.is_user_authorized():
+                logger.error("Session unauthorized. Please run setup first")
+                return
 
-        logger.info("Successfully connected and authorized")
+            logger.info("Successfully connected using existing session")
 
-        while True:  # Continuous collection loop
-            try:
-                # Get all dialogs without caching
-                dialogs = await client.get_dialogs(limit=200, cache=False)
-                logger.info(f"Found {len(dialogs)} dialogs")
+            # Import here to avoid circular imports
+            from main import app, TelegramMessage, db, should_be_ton_dev, get_proper_dialog_type
 
-                # Process each dialog
-                for dialog in dialogs:
-                    try:
-                        if not hasattr(dialog, 'id'):
-                            continue
+            while True:  # Continuous collection loop
+                try:
+                    # Get all dialogs
+                    dialogs = await client.get_dialogs(limit=200)
+                    logger.info(f"Found {len(dialogs)} dialogs")
 
-                        channel_id = str(dialog.id)
-                        channel_title = getattr(dialog, 'title', channel_id)
+                    # Process each dialog
+                    for dialog in dialogs:
+                        try:
+                            if not hasattr(dialog, 'id'):
+                                continue
 
-                        # Get dialog type
-                        entity = dialog.entity
-                        dialog_type = current_app.get_proper_dialog_type(entity)  # Use function from main app
+                            channel_id = str(dialog.id)
+                            channel_title = getattr(dialog, 'title', channel_id)
 
-                        # Log dialog's latest message info from Telethon
-                        logger.info(f"Dialog: {channel_title}")
-                        logger.info(f"Latest message date from Telethon: {getattr(dialog.message, 'date', 'Unknown')}")
+                            # Get dialog type
+                            entity = dialog.entity
+                            with app.app_context():
+                                dialog_type = get_proper_dialog_type(entity)
 
-                        # Get latest messages
-                        with current_app.app_context():
-                            # Get latest stored message ID
-                            from main import TelegramMessage, db  # Import here to avoid circular imports
-                            latest_msg = TelegramMessage.query.filter_by(
-                                channel_id=channel_id
-                            ).order_by(TelegramMessage.message_id.desc()).first()
+                            # Log dialog's latest message info from Telethon
+                            logger.info(f"Dialog: {channel_title}")
+                            logger.info(f"Latest message date from Telethon: {getattr(dialog.message, 'date', 'Unknown')}")
 
-                            latest_id = latest_msg.message_id if latest_msg else 0
-                            logger.debug(f"Processing {channel_title} from message_id > {latest_id}")
-                            logger.debug(f"Latest message in DB: {latest_msg.timestamp if latest_msg else 'None'}")
+                            # Get latest messages
+                            with app.app_context():
+                                # Get latest stored message ID
+                                latest_msg = TelegramMessage.query.filter_by(
+                                    channel_id=channel_id
+                                ).order_by(TelegramMessage.message_id.desc()).first()
+
+                                latest_id = latest_msg.message_id if latest_msg else 0
+                                logger.debug(f"Processing {channel_title} from message_id > {latest_id}")
+                                logger.debug(f"Latest message in DB: {latest_msg.timestamp if latest_msg else 'None'}")
 
                             # Process new messages with smaller batch size
                             async for message in client.iter_messages(dialog, limit=20):
@@ -83,36 +90,41 @@ async def collect_messages():
                                 if message.text:  # Only process text messages
                                     try:
                                         is_outgoing = getattr(message, 'out', False)
-                                        is_ton_dev = current_app.should_be_ton_dev(channel_title)  # Use function from main app
+                                        with app.app_context():
+                                            is_ton_dev = should_be_ton_dev(channel_title)
 
-                                        new_msg = TelegramMessage(
-                                            message_id=message.id,
-                                            channel_id=channel_id,
-                                            channel_title=channel_title,
-                                            content=message.text,
-                                            timestamp=message.date,
-                                            is_ton_dev=is_ton_dev,
-                                            is_outgoing=is_outgoing,
-                                            dialog_type=dialog_type
-                                        )
-                                        db.session.add(new_msg)
-                                        db.session.commit()
-                                        logger.info(f"Saved new message {message.id} from {channel_title} at {message.date}")
+                                            new_msg = TelegramMessage(
+                                                message_id=message.id,
+                                                channel_id=channel_id,
+                                                channel_title=channel_title,
+                                                content=message.text,
+                                                timestamp=message.date,
+                                                is_ton_dev=is_ton_dev,
+                                                is_outgoing=is_outgoing,
+                                                dialog_type=dialog_type
+                                            )
+                                            db.session.add(new_msg)
+                                            db.session.commit()
+                                            logger.info(f"Saved new message {message.id} from {channel_title} at {message.date}")
                                     except Exception as e:
                                         logger.error(f"Error saving message: {str(e)}")
                                         db.session.rollback()
 
-                    except Exception as e:
-                        logger.error(f"Error processing dialog {channel_title}: {str(e)}")
-                        continue
+                        except Exception as e:
+                            logger.error(f"Error processing dialog {getattr(dialog, 'title', 'Unknown')}: {str(e)}")
+                            continue
 
-                # Short sleep between collection cycles
-                logger.info("Completed collection cycle, sleeping for 30 seconds")
-                await asyncio.sleep(30)
+                    # Short sleep between collection cycles
+                    logger.info("Completed collection cycle, sleeping for 30 seconds")
+                    await asyncio.sleep(30)
 
-            except Exception as e:
-                logger.error(f"Error in collection cycle: {str(e)}")
-                await asyncio.sleep(60)
+                except Exception as e:
+                    logger.error(f"Error in collection cycle: {str(e)}")
+                    await asyncio.sleep(60)
+
+        except Exception as e:
+            logger.error(f"Error connecting with existing session: {str(e)}")
+            return
 
     except Exception as e:
         logger.error(f"Fatal collector error: {str(e)}")
@@ -152,6 +164,6 @@ def ensure_single_collector():
         return
 
     logger.info("Starting new collector thread")
-    collector_thread = threading.Thread(target=start_collector_thread, daemon=False)
+    collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
     logger.info("Collector thread started successfully")
