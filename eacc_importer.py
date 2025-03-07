@@ -66,7 +66,7 @@ async def import_eacc_messages():
             logger.info(f"Latest message ID in database: {latest_id}")
 
             # Batch size for processing messages
-            batch_size = 90
+            batch_size = 100 # Increased batch size
             total_imported = 0
             total_messages_estimate = 107000  # Total messages in the chat
 
@@ -135,7 +135,7 @@ async def import_eacc_messages():
                                 messages_to_process = []
 
                                 # Sleep to avoid hitting rate limits
-                                await asyncio.sleep(5)  # Increased from 2 to 5 seconds
+                                await asyncio.sleep(2)  # Reduced sleep time as requested
                         except Exception as e:
                             logger.error(f"Error processing message {message.id}: {str(e)}")
 
@@ -155,8 +155,8 @@ async def import_eacc_messages():
                 except ZeroDivisionError:
                     logger.info("Not enough data to estimate time remaining.")
 
-                logger.info(f"Waiting 15 seconds before next batch")
-                await asyncio.sleep(15)  # Increased from 5 to 15 seconds
+                logger.info(f"Waiting 2 seconds before next batch")
+                await asyncio.sleep(2)  # Reduced sleep time as requested
 
             # Save any remaining messages
             if messages_to_process:
