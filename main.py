@@ -35,10 +35,11 @@ def database_stats():
         ton_count = db.session.query(TelegramMessage).filter_by(is_ton_dev=True).count()
         
         # Get channel statistics
+        # Using bool_or instead of max for boolean aggregation
         channels_query = db.session.query(
             TelegramMessage.channel_title,
             db.func.count(TelegramMessage.id).label('count'),
-            db.func.max(TelegramMessage.is_ton_dev).label('is_ton_dev')
+            db.func.bool_or(TelegramMessage.is_ton_dev).label('is_ton_dev')
         ).group_by(TelegramMessage.channel_title).order_by(db.desc('count')).all()
         
         # Get count of accessible channels
