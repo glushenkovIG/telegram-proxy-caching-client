@@ -1,4 +1,3 @@
-
 import os
 import asyncio
 import logging
@@ -34,7 +33,7 @@ async def import_eacc_messages():
             api_hash='dummy',  # Dummy value, not used with existing session
             system_version="4.16.30-vxCUSTOM"
         )
-        
+
         await client.connect()
 
         if not await client.is_user_authorized():
@@ -42,74 +41,74 @@ async def import_eacc_messages():
             return
 
         logger.info("Successfully connected using existing session")
-        
+
         # Get the EACC chat entity
         eacc_chat = 'eaccchat'
         entity = await client.get_entity(eacc_chat)
-        
+
         if not entity:
             logger.error(f"Could not find chat: {eacc_chat}")
             return
-            
+
         channel_id = str(entity.id)
         channel_title = getattr(entity, 'title', eacc_chat)
         dialog_type = get_proper_dialog_type(entity)
-        
+
         logger.info(f"Found chat: {channel_title} with ID: {channel_id}")
-        
+
         # Get latest stored message ID for this channel
         with app.app_context():
             latest_msg = TelegramMessage.query.filter_by(
                 channel_id=channel_id
             ).order_by(TelegramMessage.message_id.desc()).first()
-            
+
             latest_id = latest_msg.message_id if latest_msg else 0
             logger.info(f"Latest message ID in database: {latest_id}")
-            
+
             # Batch size for processing messages
             batch_size = 50
             total_imported = 0
-            
+
             # We'll use smaller batches to avoid hitting rate limits
             messages_to_process = []
-            
+
             # Start from the beginning if no messages are found
             logger.info(f"Fetching messages (limit: {batch_size})...")
-            
+
             batch_counter = 0
             offset_id = 0  # Start from most recent messages
-            
+
             # If we have messages in the DB already, start from the latest one
             # Otherwise, we'll get all messages
-            
+
             while True:
                 batch_counter += 1
                 logger.info(f"Fetching batch #{batch_counter} (offset_id: {offset_id})")
-                
+
                 # Get messages with a small batch size to avoid rate limits
                 messages = await client.get_messages(
                     entity, 
                     limit=batch_size,
                     offset_id=offset_id
                 )
-                
+
                 if not messages or len(messages) == 0:
                     logger.info("No more messages to process")
                     break
-                
+
                 # Update offset for next batch
                 offset_id = messages[-1].id
-                
+
                 for message in messages:
                     # Skip if we've already processed this message
                     if message.id <= latest_id and latest_id != 0:
                         logger.debug(f"Skipping message {message.id} - already processed")
                         continue
-                    
+
                     if message.text:
                         try:
                             is_outgoing = getattr(message, 'out', False)
-                            
+
                             # Create new message object
                             new_msg = TelegramMessage(
                                 message_id=message.id,
@@ -121,36 +120,36 @@ async def import_eacc_messages():
                                 is_outgoing=is_outgoing,
                                 dialog_type=dialog_type
                             )
-                            
+
                             messages_to_process.append(new_msg)
-                            
+
                             if len(messages_to_process) >= 10:  # Commit in smaller chunks
                                 db.session.add_all(messages_to_process)
                                 db.session.commit()
                                 total_imported += len(messages_to_process)
                                 logger.info(f"Saved {len(messages_to_process)} messages, total so far: {total_imported}")
                                 messages_to_process = []
-                                
+
                                 # Sleep to avoid hitting rate limits
-                                await asyncio.sleep(2)
+                                await asyncio.sleep(5)  # Increased from 2 to 5 seconds
                         except Exception as e:
                             logger.error(f"Error processing message {message.id}: {str(e)}")
-                
+
                 # If we didn't get a full batch, we've reached the end
                 if len(messages) < batch_size:
                     logger.info("Reached the end of available messages")
                     break
-                    
+
                 # Sleep between batches to avoid rate limits
-                logger.info(f"Waiting 5 seconds before next batch")
-                await asyncio.sleep(5)
-            
+                logger.info(f"Waiting 15 seconds before next batch")
+                await asyncio.sleep(15)  # Increased from 5 to 15 seconds
+
             # Save any remaining messages
             if messages_to_process:
                 db.session.add_all(messages_to_process)
                 db.session.commit()
                 total_imported += len(messages_to_process)
-            
+
             logger.info(f"Import completed. Total messages imported: {total_imported}")
 
     except Exception as e:
