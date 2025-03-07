@@ -1,13 +1,25 @@
 
 from flask import render_template, jsonify
 from app import app, db, logger
+from models import TelegramMessage
 from collector import ensure_single_collector
 import atexit
 import os
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Fetch recent messages to display
+    messages = []
+    try:
+        # Get the 10 most recent messages
+        messages = db.session.query(TelegramMessage).order_by(
+            TelegramMessage.timestamp.desc()
+        ).limit(10).all()
+        logger.info(f"Loaded {len(messages)} messages for display")
+    except Exception as e:
+        logger.error(f"Error loading messages for UI: {str(e)}")
+    
+    return render_template('index.html', messages=messages)
 
 @app.route('/status')
 def status():

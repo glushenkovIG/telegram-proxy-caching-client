@@ -1,6 +1,36 @@
+
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>TON Dev Messages</h1>
-<p>Server is running!</p>
+<div class="container mt-4">
+  <h1>TON Dev Messages</h1>
+  
+  {% if messages %}
+    <div class="mb-3">
+      <h3>Recent Messages</h3>
+      <div class="list-group">
+        {% for message in messages %}
+          <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">{{ message.channel_title }}</h5>
+              <small>{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <p class="mb-1">{{ message.content }}</p>
+            {% if message.is_ton_dev %}
+              <span class="badge bg-primary">TON DEV</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      Server is running! Collecting messages in background.
+    </div>
+  {% endif %}
+  
+  <div class="mt-3">
+    <a href="/database" class="btn btn-primary">View Database Stats</a>
+  </div>
+</div>
 {% endblock %}
