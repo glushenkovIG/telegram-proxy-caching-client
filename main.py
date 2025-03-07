@@ -1,11 +1,17 @@
-from flask import render_template
+
+from flask import render_template, jsonify
 from app import app, db, logger
 from collector import ensure_single_collector
 import atexit
+import os
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/status')
+def status():
+    return jsonify({"status": "running"})
 
 # Start the collector thread when the app starts
 collector_thread = None
@@ -42,8 +48,9 @@ if __name__ == "__main__":
         atexit.register(cleanup)
 
         # Start Flask server
-        logger.info("Starting Flask server on port 5000")
-        app.run(host="0.0.0.0", port=5000, debug=True)
+        port = int(os.environ.get("PORT", 5000))
+        logger.info(f"Starting Flask server on port {port}")
+        app.run(host="0.0.0.0", port=port, debug=True)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise

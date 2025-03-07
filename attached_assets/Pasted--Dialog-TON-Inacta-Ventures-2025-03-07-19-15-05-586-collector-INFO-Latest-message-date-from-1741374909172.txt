@@ -1,0 +1,164 @@
+ Dialog: TON @ Inacta Ventures
+2025-03-07 19:15:05,586 - collector - INFO - Latest message date from Telethon: 2025-03-05 13:24:15+00:00
+2025-03-07 19:15:05,652 - collector - DEBUG - Processing TON @ Inacta Ventures from message_id > 133339
+2025-03-07 19:15:05,652 - collector - DEBUG - Latest message in DB: 2025-03-05 13:24:15
+2025-03-07 19:15:05,652 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148269661477920 to GetHistoryRequest (7fb197b81610)
+2025-03-07 19:15:05,652 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 64 bytes for sending
+2025-03-07 19:15:05,653 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:05,653 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:05,653 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148269663197392 to MsgsAck (7fb197cf6250)
+2025-03-07 19:15:05,653 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 36 bytes for sending
+2025-03-07 19:15:05,653 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:05,653 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:05,797 - telethon.network.mtprotosender - DEBUG - Handling RPC result for message 7479148269661477920
+2025-03-07 19:15:05,798 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:05,799 - collector - DEBUG - Found message 133339 from TON @ Inacta Ventures with date 2025-03-05 13:24:15+00:00
+2025-03-07 19:15:05,799 - collector - DEBUG - Skipping message 133339 - already processed
+2025-03-07 19:15:05,799 - collector - DEBUG - Found message 130321 from TON @ Inacta Ventures with date 2025-01-23 11:01:30+00:00
+2025-03-07 19:15:05,799 - collector - DEBUG - Skipping message 130321 - already processed
+2025-03-07 19:15:05,799 - collector - DEBUG - Found message 130320 from TON @ Inacta Ventures with date 2025-01-23 11:01:15+00:00
+2025-03-07 19:15:05,799 - collector - DEBUG - Skipping message 130320 - already processed
+2025-03-07 19:15:05,799 - collector - DEBUG - Found message 130319 from TON @ Inacta Ventures with date 2025-01-23 11:01:10+00:00
+2025-03-07 19:15:05,799 - collector - DEBUG - Skipping message 130319 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130302 from TON @ Inacta Ventures with date 2025-01-22 09:00:40+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130302 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130292 from TON @ Inacta Ventures with date 2025-01-21 16:09:59+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130292 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130291 from TON @ Inacta Ventures with date 2025-01-21 16:09:05+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130291 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130290 from TON @ Inacta Ventures with date 2025-01-21 16:08:39+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130290 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130289 from TON @ Inacta Ventures with date 2025-01-21 16:08:18+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130289 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130288 from TON @ Inacta Ventures with date 2025-01-21 16:07:48+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130288 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130287 from TON @ Inacta Ventures with date 2025-01-21 16:07:29+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130287 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130286 from TON @ Inacta Ventures with date 2025-01-21 16:06:21+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130286 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130285 from TON @ Inacta Ventures with date 2025-01-21 16:06:11+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130285 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130284 from TON @ Inacta Ventures with date 2025-01-21 16:06:03+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130284 - already processed
+2025-03-07 19:15:05,800 - collector - DEBUG - Found message 130283 from TON @ Inacta Ventures with date 2025-01-21 16:05:50+00:00
+2025-03-07 19:15:05,800 - collector - DEBUG - Skipping message 130283 - already processed
+2025-03-07 19:15:05,820 - collector - INFO - Dialog: iMe Messenger & Crypto Wallet
+2025-03-07 19:15:05,820 - collector - INFO - Latest message date from Telethon: 2025-03-05 12:33:45+00:00
+2025-03-07 19:15:05,888 - collector - DEBUG - Processing iMe Messenger & Crypto Wallet from message_id > 929
+2025-03-07 19:15:05,888 - collector - DEBUG - Latest message in DB: 2025-03-05 12:33:45
+2025-03-07 19:15:05,889 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148270607128020 to GetHistoryRequest (7fb197b776d0)
+2025-03-07 19:15:05,889 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 72 bytes for sending
+2025-03-07 19:15:05,889 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:05,889 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:05,889 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148270608659620 to MsgsAck (7fb1986dd3d0)
+2025-03-07 19:15:05,889 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 36 bytes for sending
+2025-03-07 19:15:05,889 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:05,889 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:06,304 - telethon.network.mtprotosender - DEBUG - Handling RPC result for message 7479148270607128020
+2025-03-07 19:15:06,311 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 929 from iMe Messenger & Crypto Wallet with date 2025-03-05 12:33:45+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 929 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 928 from iMe Messenger & Crypto Wallet with date 2025-03-03 14:37:32+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 928 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 927 from iMe Messenger & Crypto Wallet with date 2025-03-01 14:42:03+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 927 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 926 from iMe Messenger & Crypto Wallet with date 2025-03-01 07:30:52+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 926 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 925 from iMe Messenger & Crypto Wallet with date 2025-02-28 09:41:33+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 925 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 923 from iMe Messenger & Crypto Wallet with date 2025-02-24 15:06:10+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 923 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 922 from iMe Messenger & Crypto Wallet with date 2025-02-24 08:39:46+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 922 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 921 from iMe Messenger & Crypto Wallet with date 2025-02-20 08:39:54+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 921 - already processed
+2025-03-07 19:15:06,312 - collector - DEBUG - Found message 920 from iMe Messenger & Crypto Wallet with date 2025-02-19 11:03:16+00:00
+2025-03-07 19:15:06,312 - collector - DEBUG - Skipping message 920 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 919 from iMe Messenger & Crypto Wallet with date 2025-02-13 13:55:13+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 919 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 918 from iMe Messenger & Crypto Wallet with date 2025-02-12 13:59:24+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 918 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 917 from iMe Messenger & Crypto Wallet with date 2025-02-12 12:41:28+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 917 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 916 from iMe Messenger & Crypto Wallet with date 2025-02-11 10:46:56+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 916 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 915 from iMe Messenger & Crypto Wallet with date 2025-02-10 13:57:24+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 915 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 914 from iMe Messenger & Crypto Wallet with date 2025-02-01 15:20:24+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 914 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 913 from iMe Messenger & Crypto Wallet with date 2025-02-01 13:24:33+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 913 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 912 from iMe Messenger & Crypto Wallet with date 2025-02-01 11:53:39+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 912 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 911 from iMe Messenger & Crypto Wallet with date 2025-01-31 16:51:24+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 911 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 910 from iMe Messenger & Crypto Wallet with date 2025-01-31 09:36:54+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 910 - already processed
+2025-03-07 19:15:06,313 - collector - DEBUG - Found message 908 from iMe Messenger & Crypto Wallet with date 2025-01-30 16:10:10+00:00
+2025-03-07 19:15:06,313 - collector - DEBUG - Skipping message 908 - already processed
+2025-03-07 19:15:06,336 - collector - INFO - Dialog: Hamster Kombat Announcement
+2025-03-07 19:15:06,336 - collector - INFO - Latest message date from Telethon: 2025-03-05 12:30:21+00:00
+2025-03-07 19:15:06,402 - collector - DEBUG - Processing Hamster Kombat Announcement from message_id > 367
+2025-03-07 19:15:06,402 - collector - DEBUG - Latest message in DB: 2025-03-05 12:30:21
+2025-03-07 19:15:06,403 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148272958493708 to GetHistoryRequest (7fb197b509d0)
+2025-03-07 19:15:06,403 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 72 bytes for sending
+2025-03-07 19:15:06,403 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:06,403 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:06,403 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148272960380076 to MsgsAck (7fb197b3f690)
+2025-03-07 19:15:06,403 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 36 bytes for sending
+2025-03-07 19:15:06,404 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:06,404 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:06,778 - telethon.network.mtprotosender - DEBUG - Handling RPC result for message 7479148272958493708
+2025-03-07 19:15:06,784 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:06,784 - collector - DEBUG - Found message 367 from Hamster Kombat Announcement with date 2025-03-05 12:30:21+00:00
+2025-03-07 19:15:06,784 - collector - DEBUG - Skipping message 367 - already processed
+2025-03-07 19:15:06,784 - collector - DEBUG - Found message 366 from Hamster Kombat Announcement with date 2025-03-04 18:06:52+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 366 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 365 from Hamster Kombat Announcement with date 2025-03-04 14:23:34+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 365 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 364 from Hamster Kombat Announcement with date 2025-02-27 14:51:46+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 364 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 363 from Hamster Kombat Announcement with date 2025-02-27 14:51:46+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 363 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 362 from Hamster Kombat Announcement with date 2025-02-27 14:51:46+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 362 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 358 from Hamster Kombat Announcement with date 2025-02-27 14:30:42+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 358 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 357 from Hamster Kombat Announcement with date 2025-02-25 09:02:24+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 357 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 356 from Hamster Kombat Announcement with date 2025-02-18 15:12:10+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 356 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 355 from Hamster Kombat Announcement with date 2025-02-14 18:00:21+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 355 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 354 from Hamster Kombat Announcement with date 2025-02-07 10:22:21+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 354 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 353 from Hamster Kombat Announcement with date 2025-01-29 11:04:37+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 353 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 352 from Hamster Kombat Announcement with date 2025-01-22 13:13:17+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 352 - already processed
+2025-03-07 19:15:06,785 - collector - DEBUG - Found message 351 from Hamster Kombat Announcement with date 2025-01-16 11:19:58+00:00
+2025-03-07 19:15:06,785 - collector - DEBUG - Skipping message 351 - already processed
+2025-03-07 19:15:06,786 - collector - DEBUG - Found message 350 from Hamster Kombat Announcement with date 2025-01-13 12:23:43+00:00
+2025-03-07 19:15:06,786 - collector - DEBUG - Skipping message 350 - already processed
+2025-03-07 19:15:06,788 - collector - DEBUG - Found message 349 from Hamster Kombat Announcement with date 2025-01-06 15:16:02+00:00
+2025-03-07 19:15:06,788 - collector - DEBUG - Skipping message 349 - already processed
+2025-03-07 19:15:06,789 - collector - DEBUG - Found message 348 from Hamster Kombat Announcement with date 2024-12-31 14:14:43+00:00
+2025-03-07 19:15:06,790 - collector - DEBUG - Skipping message 348 - already processed
+2025-03-07 19:15:06,791 - collector - DEBUG - Found message 347 from Hamster Kombat Announcement with date 2024-12-28 16:06:38+00:00
+2025-03-07 19:15:06,791 - collector - DEBUG - Skipping message 347 - already processed
+2025-03-07 19:15:06,791 - collector - DEBUG - Found message 346 from Hamster Kombat Announcement with date 2024-12-27 11:04:58+00:00
+2025-03-07 19:15:06,791 - collector - DEBUG - Skipping message 346 - already processed
+2025-03-07 19:15:06,792 - collector - DEBUG - Found message 345 from Hamster Kombat Announcement with date 2024-12-24 16:00:47+00:00
+2025-03-07 19:15:06,792 - collector - DEBUG - Skipping message 345 - already processed
+2025-03-07 19:15:06,812 - collector - INFO - Dialog: 💬 TON Data Hub Chat
+2025-03-07 19:15:06,814 - collector - INFO - Latest message date from Telethon: 2025-03-05 11:36:27+00:00
+2025-03-07 19:15:06,881 - collector - DEBUG - Processing 💬 TON Data Hub Chat from message_id > 24
+2025-03-07 19:15:06,883 - collector - DEBUG - Latest message in DB: 2025-03-04 12:29:50
+2025-03-07 19:15:06,884 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148274882249352 to GetHistoryRequest (7fb197b3ca90)
+2025-03-07 19:15:06,884 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 72 bytes for sending
+2025-03-07 19:15:06,884 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:06,884 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:06,884 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148274884039400 to MsgsAck (7fb19b654cd0)
+2025-03-07 19:15:06,884 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 36 bytes for sending
+2025-03-07 19:15:06,885 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:06,885 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...

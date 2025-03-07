@@ -1,0 +1,93 @@
+2025-03-07 19:15:33,719 - collector - DEBUG - Latest message in DB: 2025-02-28 00:13:15
+2025-03-07 19:15:33,719 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148390187160908 to GetHistoryRequest (7fb197cdc290)
+2025-03-07 19:15:33,719 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 72 bytes for sending
+2025-03-07 19:15:33,719 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:33,719 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:33,719 - telethon.extensions.messagepacker - DEBUG - Assigned msg_id = 7479148390188413084 to MsgsAck (7fb197c52890)
+2025-03-07 19:15:33,719 - telethon.network.mtprotosender - DEBUG - Encrypting 1 message(s) in 36 bytes for sending
+2025-03-07 19:15:33,720 - telethon.network.mtprotosender - DEBUG - Encrypted messages put in a queue to be sent
+2025-03-07 19:15:33,720 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:33,884 - telethon.network.mtprotosender - DEBUG - Handling RPC result for message 7479148390187160908
+2025-03-07 19:15:33,885 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:33,885 - collector - DEBUG - Found message 545 from Construction - AKA SITZENS with date 2025-02-28 00:13:15+00:00
+2025-03-07 19:15:33,885 - collector - DEBUG - Skipping message 545 - already processed
+2025-03-07 19:15:33,885 - collector - DEBUG - Found message 544 from Construction - AKA SITZENS with date 2025-02-25 14:56:11+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 544 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 543 from Construction - AKA SITZENS with date 2025-02-13 22:37:37+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 543 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 542 from Construction - AKA SITZENS with date 2025-01-29 21:20:08+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 542 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 541 from Construction - AKA SITZENS with date 2025-01-26 20:48:37+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 541 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 540 from Construction - AKA SITZENS with date 2025-01-21 21:18:02+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 540 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 539 from Construction - AKA SITZENS with date 2025-01-21 15:55:20+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 539 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 538 from Construction - AKA SITZENS with date 2025-01-21 15:55:20+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 538 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 537 from Construction - AKA SITZENS with date 2025-01-21 15:54:17+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 537 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 536 from Construction - AKA SITZENS with date 2025-01-20 19:13:54+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 536 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 535 from Construction - AKA SITZENS with date 2025-01-20 18:01:02+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 535 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 534 from Construction - AKA SITZENS with date 2025-01-20 18:00:50+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 534 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 533 from Construction - AKA SITZENS with date 2025-01-20 17:59:31+00:00
+2025-03-07 19:15:33,886 - collector - DEBUG - Skipping message 533 - already processed
+2025-03-07 19:15:33,886 - collector - DEBUG - Found message 532 from Construction - AKA SITZENS with date 2025-01-20 17:57:19+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 532 - already processed
+2025-03-07 19:15:33,887 - collector - DEBUG - Found message 531 from Construction - AKA SITZENS with date 2025-01-20 17:56:50+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 531 - already processed
+2025-03-07 19:15:33,887 - collector - DEBUG - Found message 530 from Construction - AKA SITZENS with date 2025-01-20 17:55:50+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 530 - already processed
+2025-03-07 19:15:33,887 - collector - DEBUG - Found message 529 from Construction - AKA SITZENS with date 2025-01-20 17:55:01+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 529 - already processed
+2025-03-07 19:15:33,887 - collector - DEBUG - Found message 528 from Construction - AKA SITZENS with date 2025-01-20 16:26:19+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 528 - already processed
+2025-03-07 19:15:33,887 - collector - DEBUG - Found message 527 from Construction - AKA SITZENS with date 2025-01-20 11:29:49+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 527 - already processed
+2025-03-07 19:15:33,887 - collector - DEBUG - Found message 526 from Construction - AKA SITZENS with date 2025-01-02 15:41:31+00:00
+2025-03-07 19:15:33,887 - collector - DEBUG - Skipping message 526 - already processed
+2025-03-07 19:15:33,907 - collector - INFO - Completed collection cycle, sleeping for 30 seconds
+2025-03-07 19:15:34,043 - telethon.network.mtprotosender - DEBUG - Handling update UpdateShort
+2025-03-07 19:15:34,043 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:41,932 - telethon.network.mtprotosender - DEBUG - Handling update UpdateShort
+2025-03-07 19:15:41,932 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:44,873 - collector - INFO - Starting collection cycle
+2025-03-07 19:15:44,874 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2025-03-07 19:15:44,874 - telethon.network.mtprotosender - DEBUG - Connection attempt 1...
+2025-03-07 19:15:44,974 - telethon.network.mtprotosender - DEBUG - Connection success!
+2025-03-07 19:15:44,974 - telethon.network.mtprotosender - DEBUG - Starting send loop
+2025-03-07 19:15:44,974 - telethon.network.mtprotosender - DEBUG - Starting receive loop
+2025-03-07 19:15:44,974 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2025-03-07 19:15:45,931 - telethon.network.mtprotosender - DEBUG - Handling gzipped data
+2025-03-07 19:15:45,931 - telethon.network.mtprotosender - DEBUG - Handling update Updates
+2025-03-07 19:15:45,931 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:47,261 - telethon.network.mtprotosender - DEBUG - Handling container
+2025-03-07 19:15:47,261 - telethon.network.mtprotosender - DEBUG - Handling gzipped data
+2025-03-07 19:15:47,262 - telethon.network.mtprotosender - DEBUG - Handling update Updates
+2025-03-07 19:15:47,262 - telethon.network.mtprotosender - DEBUG - Handling update UpdateShort
+2025-03-07 19:15:47,262 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:47,946 - telethon.network.mtprotosender - DEBUG - Handling update UpdateShort
+2025-03-07 19:15:47,946 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:49,982 - collector - ERROR - Error connecting with existing session: database is locked
+2025-03-07 19:15:49,983 - telethon.network.mtprotosender - DEBUG - Waiting for messages to send...
+2025-03-07 19:15:49,983 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:49,983 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
+2025-03-07 19:15:49,983 - telethon.network.mtprotosender - DEBUG - Closing current connection...
+2025-03-07 19:15:49,983 - telethon.network.mtprotosender - DEBUG - Cancelling 0 pending message(s)...
+2025-03-07 19:15:49,983 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
+2025-03-07 19:15:52,575 - telethon.network.mtprotosender - DEBUG - Handling gzipped data
+2025-03-07 19:15:52,576 - telethon.network.mtprotosender - DEBUG - Handling update Updates
+2025-03-07 19:15:52,577 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:54,751 - telethon.network.mtprotosender - DEBUG - Handling gzipped data
+2025-03-07 19:15:54,751 - telethon.network.mtprotosender - DEBUG - Handling update Updates
+2025-03-07 19:15:54,752 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+2025-03-07 19:15:55,002 - collector - ERROR - Error in collector loop (attempt 4): database is locked
+2025-03-07 19:15:55,002 - collector - INFO - Retrying in 80 seconds...
+2025-03-07 19:15:58,716 - telethon.network.mtprotosender - DEBUG - Handling container
+2025-03-07 19:15:58,717 - telethon.network.mtprotosender - DEBUG - Handling update UpdateShort
+2025-03-07 19:15:58,717 - telethon.network.mtprotosender - DEBUG - Handling update Updates
+2025-03-07 19:15:58,717 - telethon.network.mtprotosender - DEBUG - Receiving items from the network...
+ 2025-03-07 19:16:03,636 - telethon.exten
