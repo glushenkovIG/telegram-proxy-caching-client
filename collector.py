@@ -6,6 +6,10 @@ from datetime import datetime, timedelta
 from telethon import TelegramClient
 from flask import current_app
 
+from app import db
+from models import TelegramMessage
+from utils import should_be_ton_dev, get_proper_dialog_type
+
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -41,9 +45,6 @@ async def collect_messages():
 
             logger.info("Successfully connected using existing session")
 
-            # Import here to avoid circular imports
-            from main import app, TelegramMessage, db, should_be_ton_dev, get_proper_dialog_type
-
             while True:  # Continuous collection loop
                 try:
                     # Get all dialogs
@@ -61,15 +62,14 @@ async def collect_messages():
 
                             # Get dialog type
                             entity = dialog.entity
-                            with app.app_context():
-                                dialog_type = get_proper_dialog_type(entity)
+                            dialog_type = get_proper_dialog_type(entity)
 
                             # Log dialog's latest message info from Telethon
                             logger.info(f"Dialog: {channel_title}")
                             logger.info(f"Latest message date from Telethon: {getattr(dialog.message, 'date', 'Unknown')}")
 
                             # Get latest messages
-                            with app.app_context():
+                            with current_app.app_context():
                                 # Get latest stored message ID
                                 latest_msg = TelegramMessage.query.filter_by(
                                     channel_id=channel_id
@@ -90,7 +90,7 @@ async def collect_messages():
                                 if message.text:  # Only process text messages
                                     try:
                                         is_outgoing = getattr(message, 'out', False)
-                                        with app.app_context():
+                                        with current_app.app_context():
                                             is_ton_dev = should_be_ton_dev(channel_title)
 
                                             new_msg = TelegramMessage(
@@ -133,8 +133,8 @@ async def collect_messages():
             await client.disconnect()
             logger.info("Disconnected Telegram client")
 
-# Main collector loop with backoff
 async def collector_loop():
+    """Main collector loop with backoff"""
     consecutive_errors = 0
     while True:
         try:
@@ -148,8 +148,8 @@ async def collector_loop():
             logger.info(f"Retrying in {retry_wait} seconds...")
             await asyncio.sleep(retry_wait)
 
-# Collector thread starter
 def start_collector_thread():
+    """Collector thread starter"""
     logger.info("Initializing collector thread")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

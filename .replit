@@ -80,6 +80,7 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+waitForPort = 5000
 
 [[ports]]
 localPort = 3000
@@ -96,3 +97,6 @@ externalPort = 80
 [[ports]]
 localPort = 8080
 externalPort = 8080
+
+[objectStorage]
+defaultBucketID = "replit-objstore-44917c84-5d64-4ef3-a51e-b60b25851d66"
