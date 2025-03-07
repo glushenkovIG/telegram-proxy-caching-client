@@ -5,47 +5,180 @@
 <div class="container mt-4">
   <div class="row mb-4">
     <div class="col-12">
-      <h1 class="display-4 mb-3">TON Development Messages</h1>
-      <p class="lead text-muted">Total messages in database: {{ all_count }} (Showing latest {{ messages|length }})</p>
+      <h1 class="display-4 mb-3">TON Development Analytics</h1>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-12">
-      {% if messages %}
-        {% for message in messages %}
-        <div class="card mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <strong>{{ message.channel_title }}</strong>
-            {% if message.is_ton_dev %}
-            <span class="badge bg-primary">TON DEV</span>
-            {% endif %}
-          </div>
-          <div class="card-body">
-            <p class="card-text">{{ message.content }}</p>
-            <div class="d-flex justify-content-between">
-              <small class="text-muted">{{ message.dialog_type }}</small>
-              <small class="timestamp">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+  <!-- Statistics Section -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h5 class="card-title">Message Statistics</h5>
+          <div class="stats-container">
+            <div class="stat-item">
+              <span class="stat-value">{{ all_count }}</span>
+              <span class="stat-label">Total Messages</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ ton_count }}</span>
+              <span class="stat-label">TON Dev Messages</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ channels|length }}</span>
+              <span class="stat-label">Total Channels</span>
             </div>
           </div>
         </div>
-        {% endfor %}
-      {% else %}
-        <div class="alert alert-info">
-          <h4 class="alert-heading">Server is running!</h4>
-          <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages from TON communities.</p>
-          <hr>
-          <p class="mb-0">If you continue to see this message, please make sure your Telegram session is properly authenticated.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h5 class="card-title">Top Channels</h5>
+          <div class="top-channels">
+            {% for channel in channels[:5] %}
+            <div class="channel-item">
+              <span class="channel-name">{{ channel.channel_title }}</span>
+              <div class="channel-stats">
+                <span class="message-count">{{ channel.count }} msgs</span>
+                {% if channel.is_ton_dev %}
+                <span class="badge bg-primary">TON DEV</span>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-center mt-2">
+            <a href="#channel-list" class="btn btn-sm btn-outline-primary">View All Channels</a>
+          </div>
         </div>
-      {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Message List Section -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Recent Messages ({{ messages|length }} of {{ all_count }})</h5>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showMetadata">
+            <label class="form-check-label" for="showMetadata">Show Metadata</label>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover message-table mb-0">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Message</th>
+                  <th>Time</th>
+                  <th class="metadata-column">ID</th>
+                  <th class="metadata-column">Type</th>
+                  <th class="metadata-column">TON Dev</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if messages %}
+                  {% for message in messages %}
+                  <tr>
+                    <td class="channel-cell">
+                      <span class="channel-title">{{ message.channel_title }}</span>
+                    </td>
+                    <td class="message-cell">{{ message.content }}</td>
+                    <td class="time-cell">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td class="metadata-column">{{ message.message_id }}</td>
+                    <td class="metadata-column">{{ message.dialog_type }}</td>
+                    <td class="metadata-column">
+                      {% if message.is_ton_dev %}
+                      <span class="badge bg-primary">Yes</span>
+                      {% else %}
+                      <span class="badge bg-secondary">No</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="text-center p-4">
+                      <div class="alert alert-info mb-0">
+                        <h4 class="alert-heading">Server is running!</h4>
+                        <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel List Section -->
+  <div class="row" id="channel-list">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">All Channels ({{ channels|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover channel-table mb-0">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Messages</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for channel in channels %}
+                <tr>
+                  <td>{{ channel.channel_title }}</td>
+                  <td>{{ channel.count }}</td>
+                  <td>
+                    {% if channel.is_ton_dev %}
+                    <span class="badge bg-primary">TON DEV</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Other</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    // Auto-refresh the page every 30 seconds
+    // Toggle metadata columns
+    document.getElementById('showMetadata').addEventListener('change', function() {
+      const metadataColumns = document.querySelectorAll('.metadata-column');
+      metadataColumns.forEach(col => {
+        col.style.display = this.checked ? 'table-cell' : 'none';
+      });
+    });
+
+    // Initialize metadata columns as hidden
+    document.addEventListener('DOMContentLoaded', function() {
+      const metadataColumns = document.querySelectorAll('.metadata-column');
+      metadataColumns.forEach(col => {
+        col.style.display = 'none';
+      });
+    });
+
+    // Auto-refresh the page every 60 seconds
     setTimeout(function() {
       window.location.reload();
-    }, 30000);
+    }, 60000);
   </script>
 </div>
 {% endblock %}

@@ -58,6 +58,100 @@
         .lead {
             color: #b0b0b0;
         }
+        
+        /* New styles for improved UI */
+        .stat-card {
+            height: 100%;
+        }
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            flex: 1 0 30%;
+        }
+        .stat-value {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #0088cc;
+        }
+        .stat-label {
+            display: block;
+            font-size: 0.9rem;
+            color: #9e9e9e;
+        }
+        .top-channels {
+            margin-bottom: 10px;
+        }
+        .channel-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+        .channel-item:last-child {
+            border-bottom: none;
+        }
+        .channel-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+        }
+        .channel-stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .message-count {
+            font-size: 0.85rem;
+            color: #9e9e9e;
+        }
+        .message-table, .channel-table {
+            margin-bottom: 0;
+        }
+        .message-table th, .channel-table th {
+            background-color: #252525;
+            border-color: #333;
+        }
+        .message-table td, .channel-table td {
+            border-color: #333;
+            vertical-align: middle;
+        }
+        .channel-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .message-cell {
+            max-width: 500px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .time-cell {
+            white-space: nowrap;
+        }
+        .metadata-column {
+            white-space: nowrap;
+        }
+        .form-check-input:checked {
+            background-color: #0088cc;
+            border-color: #0088cc;
+        }
+        .btn-outline-primary {
+            color: #0088cc;
+            border-color: #0088cc;
+        }
+        .btn-outline-primary:hover {
+            background-color: #0088cc;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -70,10 +164,10 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
+                        <a class="nav-link" href="/">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/database">Database Stats</a>
+                        <a class="nav-link" href="#channel-list">Channels</a>
                     </li>
                 </ul>
             </div>

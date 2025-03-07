@@ -8,22 +8,40 @@ import os
 
 @app.route('/')
 def index():
-    # Fetch recent messages to display
+    # Fetch data for combined view
     messages = []
     all_count = 0
+    ton_count = 0
+    channels = []
+    
     try:
-        # Get total count
+        # Get total message count
         all_count = db.session.query(TelegramMessage).count()
+        
+        # Get TON dev message count
+        ton_count = db.session.query(TelegramMessage).filter_by(is_ton_dev=True).count()
+        
+        # Get channel statistics
+        channels = db.session.query(
+            TelegramMessage.channel_title,
+            db.func.count(TelegramMessage.id).label('count'),
+            db.func.bool_or(TelegramMessage.is_ton_dev).label('is_ton_dev')
+        ).group_by(TelegramMessage.channel_title).order_by(db.desc('count')).all()
         
         # Get the 100 most recent messages
         messages = db.session.query(TelegramMessage).order_by(
             TelegramMessage.timestamp.desc()
         ).limit(100).all()
-        logger.info(f"Loaded {len(messages)} messages for display out of {all_count} total")
+        
+        logger.info(f"Loaded {len(messages)} messages and {len(channels)} channels for display")
     except Exception as e:
-        logger.error(f"Error loading messages for UI: {str(e)}")
+        logger.error(f"Error loading data for UI: {str(e)}")
     
-    return render_template('index.html', messages=messages, all_count=all_count)
+    return render_template('index.html', 
+                          messages=messages, 
+                          all_count=all_count,
+                          ton_count=ton_count,
+                          channels=channels)
 
 @app.route('/status')
 def status():
