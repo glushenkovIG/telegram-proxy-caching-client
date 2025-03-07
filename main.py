@@ -2,6 +2,8 @@ import os
 import asyncio
 import logging
 import threading
+import socket
+import time
 from datetime import datetime, timedelta
 from telethon import TelegramClient
 from flask import Flask, render_template, request, jsonify
@@ -17,6 +19,21 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+def wait_for_port_availability(port, max_retries=5, retry_delay=2):
+    """Wait for port to become available with retries"""
+    for attempt in range(max_retries):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('0.0.0.0', port))
+                s.close()  # Explicitly close the socket
+                return True
+            except socket.error as e:
+                logger.warning(f"Port {port} not available, attempt {attempt + 1}/{max_retries}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                continue
+    return False
 
 # Initialize database base class
 class Base(DeclarativeBase):
@@ -378,13 +395,14 @@ if __name__ == "__main__":
             logger.error(f"Database setup error: {str(e)}", exc_info=True)
             raise
 
-    # Temporarily disable collector thread for debugging
-    # if not is_running_from_reloader():
-    #     logger.info("Starting collector thread in production mode")
-    #     ensure_single_collector()
+    # Wait for port availability
+    if not wait_for_port_availability(5000):
+        logger.error("Could not bind to port 5000 after maximum retries")
+        raise RuntimeError("Port 5000 is unavailable")
 
     # Start the Flask server
     try:
+        logger.info("Starting Flask server on port 5000")
         app.run(host="0.0.0.0", port=5000, debug=True)
     except Exception as e:
         logger.error(f"Flask server error: {str(e)}", exc_info=True)
