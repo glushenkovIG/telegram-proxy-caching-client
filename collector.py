@@ -21,6 +21,7 @@ async def collect_messages():
     """Main collection function"""
     client = None
     try:
+        from app import app  # Import app here to use with app_context
         session_path = 'ton_collector_session.session'
 
         # Check if session exists
@@ -68,8 +69,8 @@ async def collect_messages():
                             logger.info(f"Dialog: {channel_title}")
                             logger.info(f"Latest message date from Telethon: {getattr(dialog.message, 'date', 'Unknown')}")
 
-                            # Get latest messages
-                            with current_app.app_context():
+                            # Get latest messages - use app's context manager
+                            with app.app_context():
                                 # Get latest stored message ID
                                 latest_msg = TelegramMessage.query.filter_by(
                                     channel_id=channel_id
@@ -79,18 +80,18 @@ async def collect_messages():
                                 logger.debug(f"Processing {channel_title} from message_id > {latest_id}")
                                 logger.debug(f"Latest message in DB: {latest_msg.timestamp if latest_msg else 'None'}")
 
-                            # Process new messages with smaller batch size
-                            async for message in client.iter_messages(dialog, limit=20):
-                                logger.debug(f"Found message {message.id} from {channel_title} with date {message.date}")
+                                # Process new messages with smaller batch size
+                                message_batch = []
+                                async for message in client.iter_messages(dialog, limit=20):
+                                    logger.debug(f"Found message {message.id} from {channel_title} with date {message.date}")
 
-                                if message.id <= latest_id and latest_id != 0:
-                                    logger.debug(f"Skipping message {message.id} - already processed")
-                                    continue  # Skip processed messages
+                                    if message.id <= latest_id and latest_id != 0:
+                                        logger.debug(f"Skipping message {message.id} - already processed")
+                                        continue  # Skip processed messages
 
-                                if message.text:  # Only process text messages
-                                    try:
-                                        is_outgoing = getattr(message, 'out', False)
-                                        with current_app.app_context():
+                                    if message.text:  # Only process text messages
+                                        try:
+                                            is_outgoing = getattr(message, 'out', False)
                                             is_ton_dev = should_be_ton_dev(channel_title)
 
                                             new_msg = TelegramMessage(
@@ -104,10 +105,17 @@ async def collect_messages():
                                                 dialog_type=dialog_type
                                             )
                                             db.session.add(new_msg)
-                                            db.session.commit()
-                                            logger.info(f"Saved new message {message.id} from {channel_title} at {message.date}")
+                                            message_batch.append(message.id)
+                                        except Exception as e:
+                                            logger.error(f"Error preparing message: {str(e)}")
+                                
+                                # Commit all messages for this dialog at once
+                                if message_batch:
+                                    try:
+                                        db.session.commit()
+                                        logger.info(f"Saved {len(message_batch)} new messages from {channel_title}")
                                     except Exception as e:
-                                        logger.error(f"Error saving message: {str(e)}")
+                                        logger.error(f"Error saving messages batch: {str(e)}")
                                         db.session.rollback()
 
                         except Exception as e:
