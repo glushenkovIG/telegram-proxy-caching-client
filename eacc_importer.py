@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import random
 from datetime import datetime, timedelta
 from telethon import TelegramClient
 from app import app, db
@@ -128,12 +129,35 @@ async def import_eacc_messages():
                             messages_to_process.append(new_msg)
 
                             if len(messages_to_process) >= 10:  # Commit in smaller chunks
-                                db.session.add_all(messages_to_process)
-                                db.session.commit()
-                                total_imported += len(messages_to_process)
-                                logger.info(f"Saved {len(messages_to_process)} messages, total so far: {total_imported}")
-                                messages_to_process = []
-
+                                # Add retry logic for database operations
+                                max_retries = 5
+                                retry_count = 0
+                                retry_delay = 1  # Start with 1 second delay
+                                
+                                while retry_count < max_retries:
+                                    try:
+                                        db.session.add_all(messages_to_process)
+                                        db.session.commit()
+                                        total_imported += len(messages_to_process)
+                                        logger.info(f"Saved {len(messages_to_process)} messages, total so far: {total_imported}")
+                                        messages_to_process = []
+                                        break  # Successfully committed, exit retry loop
+                                    except Exception as e:
+                                        if "database is locked" in str(e).lower():
+                                            retry_count += 1
+                                            logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
+                                            await asyncio.sleep(retry_delay)
+                                            # Exponential backoff with jitter
+                                            retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
+                                            db.session.rollback()  # Roll back the current transaction
+                                        else:
+                                            logger.error(f"Error saving messages: {str(e)}")
+                                            db.session.rollback()
+                                            break
+                                
+                                if retry_count >= max_retries:
+                                    logger.error("Max retries exceeded for database commit")
+                                
                                 # Sleep to avoid hitting rate limits
                                 await asyncio.sleep(2)  # Reduced sleep time as requested
                         except Exception as e:
@@ -160,9 +184,30 @@ async def import_eacc_messages():
 
             # Save any remaining messages
             if messages_to_process:
-                db.session.add_all(messages_to_process)
-                db.session.commit()
-                total_imported += len(messages_to_process)
+                max_retries = 5
+                retry_count = 0
+                retry_delay = 1
+                
+                while retry_count < max_retries:
+                    try:
+                        db.session.add_all(messages_to_process)
+                        db.session.commit()
+                        total_imported += len(messages_to_process)
+                        break
+                    except Exception as e:
+                        if "database is locked" in str(e).lower():
+                            retry_count += 1
+                            logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
+                            await asyncio.sleep(retry_delay)
+                            retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
+                            db.session.rollback()
+                        else:
+                            logger.error(f"Error saving final messages batch: {str(e)}")
+                            db.session.rollback()
+                            break
+                
+                if retry_count >= max_retries:
+                    logger.error("Max retries exceeded for final database commit")
 
             logger.info(f"Import completed. Total messages imported: {total_imported}")
 
