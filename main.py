@@ -10,16 +10,20 @@ import os
 def index():
     # Fetch recent messages to display
     messages = []
+    all_count = 0
     try:
-        # Get the 10 most recent messages
+        # Get total count
+        all_count = db.session.query(TelegramMessage).count()
+        
+        # Get the 100 most recent messages
         messages = db.session.query(TelegramMessage).order_by(
             TelegramMessage.timestamp.desc()
-        ).limit(10).all()
-        logger.info(f"Loaded {len(messages)} messages for display")
+        ).limit(100).all()
+        logger.info(f"Loaded {len(messages)} messages for display out of {all_count} total")
     except Exception as e:
         logger.error(f"Error loading messages for UI: {str(e)}")
     
-    return render_template('index.html', messages=messages)
+    return render_template('index.html', messages=messages, all_count=all_count)
 
 @app.route('/status')
 def status():
