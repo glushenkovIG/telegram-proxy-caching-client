@@ -1,45 +1,42 @@
-
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <div class="card mb-4">
-            <div class="card-body">
-                <h1 class="card-title">TON Dev Messages</h1>
-                <p class="card-text text-muted">A real-time Telegram message collector for TON communities</p>
-            </div>
-        </div>
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-4 mb-3">TON Development Messages</h1>
+      <p class="lead text-muted">Total messages: {{ messages|length }}</p>
     </div>
-</div>
+  </div>
 
-{% if messages %}
-<div class="row">
-    <div class="col-md-12">
-        <h3 class="mb-3">Recent Messages</h3>
-        
-        {% for message in messages %}
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>{{ message.channel_title }}</span>
-                <span class="timestamp">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
-            </div>
-            <div class="card-body">
-                <p class="card-text">{{ message.content }}</p>
-                <div>
-                    {% if message.is_ton_dev %}
-                    <span class="badge bg-primary">TON DEV</span>
-                    {% endif %}
-                    <span class="badge bg-secondary">{{ message.dialog_type }}</span>
-                </div>
-            </div>
+  <div class="row">
+    <div class="col-12">
+      {% for message in messages %}
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>{{ message.channel_title }}</strong>
+          {% if message.is_ton_dev %}
+          <span class="badge bg-primary">TON DEV</span>
+          {% endif %}
         </div>
-        {% endfor %}
-        
-        <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
-            <a href="/database" class="btn btn-primary">View Database Stats</a>
+        <div class="card-body">
+          <p class="card-text">{{ message.content }}</p>
+          <div class="d-flex justify-content-between">
+            <small class="text-muted">From: Unknown</small>
+            <small class="timestamp">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+          </div>
         </div>
+      </div>
+      {% endfor %}
     </div>
+  </div>
+
+  <script>
+    // Auto-refresh the page every 30 seconds
+    setTimeout(function() {
+      window.location.reload();
+    }, 30000);
+  </script>
 </div>
 {% else %}
 <div class="row">
