@@ -1,30 +1,41 @@
+
 {% extends 'base.html' %}
 
 {% block content %}
 <div class="container mt-4">
-  <h1>TON Message Analytics</h1>
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-4 mb-3">TON Development Messages</h1>
+      <p class="lead text-muted">Total messages: {{ messages|length }}</p>
+    </div>
+  </div>
 
-  <div class="card mb-4">
-    <div class="card-body">
-      <h5>Recent Messages</h5>
-
+  <div class="row">
+    <div class="col-12">
       {% if messages %}
-        <div class="list-group">
-          {% for message in messages %}
-            <div class="list-group-item">
-              <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ message.channel_title }}</h5>
-                <small>{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-              </div>
-              <p class="mb-1">{{ message.content }}</p>
-              <small>
-                {% if message.is_ton_dev %}
-                  <span class="badge bg-primary">TON DEV</span>
-                {% endif %}
-                <span class="badge bg-secondary">{{ message.dialog_type }}</span>
-              </small>
+        {% for message in messages %}
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>{{ message.channel_title }}</strong>
+            {% if message.is_ton_dev %}
+            <span class="badge bg-primary">TON DEV</span>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <p class="card-text">{{ message.content }}</p>
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">{{ message.dialog_type }}</small>
+              <small class="timestamp">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
             </div>
-          {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-info">
+          <h4 class="alert-heading">Server is running!</h4>
+          <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages from TON communities.</p>
+          <hr>
+          <p class="mb-0">If you continue to see this message, please make sure your Telegram session is properly authenticated.</p>
         </div>
       {% endif %}
     </div>
