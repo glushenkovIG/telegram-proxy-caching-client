@@ -1,7 +1,7 @@
 import os
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from telethon import TelegramClient
 from app import app, db
 from models import TelegramMessage
@@ -66,10 +66,14 @@ async def import_eacc_messages():
             logger.info(f"Latest message ID in database: {latest_id}")
 
             # Batch size for processing messages
-            batch_size = 50
+            batch_size = 90
             total_imported = 0
+            total_messages_estimate = 107000  # Total messages in the chat
 
-            # We'll use smaller batches to avoid hitting rate limits
+            # Calculate time estimates
+            start_time = datetime.now()
+
+            # We'll use larger batches while still being careful with rate limits
             messages_to_process = []
 
             # Start from the beginning if no messages are found
@@ -141,6 +145,16 @@ async def import_eacc_messages():
                     break
 
                 # Sleep between batches to avoid rate limits
+                elapsed_time = datetime.now() - start_time
+                messages_processed = total_imported
+                messages_remaining = total_messages_estimate - messages_processed
+                try:
+                    messages_per_second = messages_processed / elapsed_time.total_seconds()
+                    estimated_remaining_time = timedelta(seconds=(messages_remaining / messages_per_second))
+                    logger.info(f"Estimated time remaining: {estimated_remaining_time}")
+                except ZeroDivisionError:
+                    logger.info("Not enough data to estimate time remaining.")
+
                 logger.info(f"Waiting 15 seconds before next batch")
                 await asyncio.sleep(15)  # Increased from 5 to 15 seconds
 
