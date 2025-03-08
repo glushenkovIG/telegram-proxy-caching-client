@@ -32,6 +32,10 @@
               <span class="stat-value">{{ last_3_days_count }}</span>
               <span class="stat-label">Last 3 Days</span>
             </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ last_7_days_count }}</span>
+              <span class="stat-label">Last 7 Days</span>
+            </div>
           </div>
         </div>
       </div>
@@ -65,12 +69,16 @@
   <div class="row mb-4">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Channel Activity Leaderboard</h5>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-primary active" id="all-time-btn">All Time</button>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="7day-btn">Last 7 Days</button>
+          </div>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover leaderboard-table mb-0">
+            <table class="table table-hover leaderboard-table mb-0" id="all-time-table">
               <thead>
                 <tr>
                   <th>Channel</th>
@@ -81,6 +89,43 @@
               </thead>
               <tbody>
                 {% for channel in channel_activity %}
+                <tr>
+                  <td>{{ channel.channel_title }}</td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar bg-success" role="progressbar" 
+                           style="width: {{ (channel.incoming / channel.total * 100) if channel.total else 0 }}%" 
+                           aria-valuenow="{{ channel.incoming }}" aria-valuemin="0" aria-valuemax="{{ channel.total }}">
+                        {{ channel.incoming }}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar bg-info" role="progressbar" 
+                           style="width: {{ (channel.outgoing / channel.total * 100) if channel.total else 0 }}%" 
+                           aria-valuenow="{{ channel.outgoing }}" aria-valuemin="0" aria-valuemax="{{ channel.total }}">
+                        {{ channel.outgoing }}
+                      </div>
+                    </div>
+                  </td>
+                  <td><strong>{{ channel.total }}</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            
+            <table class="table table-hover leaderboard-table mb-0" id="7day-table" style="display: none;">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Incoming (7d)</th>
+                  <th>Outgoing (7d)</th>
+                  <th>Total (7d)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for channel in seven_day_activity %}
                 <tr>
                   <td>{{ channel.channel_title }}</td>
                   <td>
@@ -228,6 +273,21 @@
       metadataColumns.forEach(col => {
         col.style.display = 'none';
       });
+    });
+
+    // Toggle between 7-day and all-time leaderboards
+    document.getElementById('all-time-btn').addEventListener('click', function() {
+      document.getElementById('all-time-table').style.display = 'table';
+      document.getElementById('7day-table').style.display = 'none';
+      this.classList.add('active');
+      document.getElementById('7day-btn').classList.remove('active');
+    });
+    
+    document.getElementById('7day-btn').addEventListener('click', function() {
+      document.getElementById('all-time-table').style.display = 'none';
+      document.getElementById('7day-table').style.display = 'table';
+      this.classList.add('active');
+      document.getElementById('all-time-btn').classList.remove('active');
     });
 
     // Auto-refresh the page every 60 seconds
