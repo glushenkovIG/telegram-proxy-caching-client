@@ -42,9 +42,7 @@ async def import_eacc_messages():
         timestamp TIMESTAMP,
         is_ton_dev BOOLEAN DEFAULT 0,
         is_outgoing BOOLEAN DEFAULT 0,
-        dialog_type TEXT,
-        sender_id TEXT,
-        sender_username TEXT
+        dialog_type TEXT
     )
     ''')
     conn.commit()
@@ -146,11 +144,6 @@ async def import_eacc_messages():
                         is_outgoing = getattr(message, 'out', False)
 
                         # Create new message object
-                        # Get sender information
-                        sender = await message.get_sender()
-                        sender_id = str(sender.id) if sender else None
-                        sender_username = getattr(sender, 'username', None)
-                        
                         new_msg = TelegramMessage(
                             message_id=message.id,
                             channel_id=channel_id,
@@ -159,9 +152,7 @@ async def import_eacc_messages():
                             timestamp=message.date,
                             is_ton_dev=False,  # Not a TON dev channel
                             is_outgoing=is_outgoing,
-                            dialog_type=dialog_type,
-                            sender_id=sender_id,
-                            sender_username=sender_username
+                            dialog_type=dialog_type
                         )
 
                         messages_to_process.append(new_msg)
@@ -178,8 +169,8 @@ async def import_eacc_messages():
                                         cursor.execute(
                                             """
                                             INSERT INTO telegram_messages 
-                                            (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type, sender_id, sender_username)
-                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type)
+                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                                             """,
                                             (
                                                 msg.message_id, 
@@ -189,9 +180,7 @@ async def import_eacc_messages():
                                                 msg.timestamp, 
                                                 msg.is_ton_dev, 
                                                 msg.is_outgoing, 
-                                                msg.dialog_type,
-                                                msg.sender_id,
-                                                msg.sender_username
+                                                msg.dialog_type
                                             )
                                         )
                                     conn.commit()
@@ -249,8 +238,8 @@ async def import_eacc_messages():
                         cursor.execute(
                             """
                             INSERT INTO telegram_messages 
-                            (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type, sender_id, sender_username)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """,
                             (
                                 msg.message_id, 
@@ -260,9 +249,7 @@ async def import_eacc_messages():
                                 msg.timestamp, 
                                 msg.is_ton_dev, 
                                 msg.is_outgoing, 
-                                msg.dialog_type,
-                                msg.sender_id,
-                                msg.sender_username
+                                msg.dialog_type
                             )
                         )
                     conn.commit()
