@@ -25,8 +25,10 @@ async def import_eacc_messages():
     # Ensure the directory exists
     os.makedirs(os.path.dirname(eacc_db_path), exist_ok=True)
     
-    # Initialize the separate database
-    conn = sqlite3.connect(eacc_db_path)
+    # Initialize the separate database with a timeout for when the DB is locked
+    # and the proper isolation level for concurrent access
+    conn = sqlite3.connect(eacc_db_path, timeout=30.0)
+    conn.isolation_level = 'IMMEDIATE'  # This helps prevent locks
     cursor = conn.cursor()
     
     # Create table if it doesn't exist
