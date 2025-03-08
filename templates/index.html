@@ -190,49 +190,183 @@
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover message-table mb-0">
-              <thead>
-                <tr>
-                  <th>Channel</th>
-                  <th>Message</th>
-                  <th>Time</th>
-                  <th class="metadata-column">ID</th>
-                  <th class="metadata-column">Type</th>
-                  <th class="metadata-column">Tagged</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% if messages %}
-                  {% for message in messages %}
-                  <tr>
-                    <td class="channel-cell">
-                      <span class="channel-title">{{ message.channel_title }}</span>
-                    </td>
-                    <td class="message-cell">{{ message.content }}</td>
-                    <td class="time-cell">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                    <td class="metadata-column">{{ message.message_id }}</td>
-                    <td class="metadata-column">{{ message.dialog_type }}</td>
-                    <td class="metadata-column">
-                      {% if message.is_ton_dev %}
-                      <span class="badge bg-primary">Yes</span>
+            <ul class="nav nav-tabs" id="messagesTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="incoming-tab" data-bs-toggle="tab" data-bs-target="#incoming" type="button" role="tab" aria-controls="incoming" aria-selected="true">Incoming</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="outgoing-tab" data-bs-toggle="tab" data-bs-target="#outgoing" type="button" role="tab" aria-controls="outgoing" aria-selected="false">Outgoing</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">All Messages</button>
+              </li>
+            </ul>
+            <div class="tab-content" id="messagesTabContent">
+              <!-- Incoming Messages -->
+              <div class="tab-pane fade show active" id="incoming" role="tabpanel" aria-labelledby="incoming-tab">
+                <table class="table table-hover message-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Channel</th>
+                      <th>Message</th>
+                      <th>Time</th>
+                      <th class="metadata-column">ID</th>
+                      <th class="metadata-column">Type</th>
+                      <th class="metadata-column">Tagged</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if messages %}
+                      {% for message in messages if not message.is_outgoing %}
+                      <tr>
+                        <td class="channel-cell">
+                          <span class="channel-title">{{ message.channel_title }}</span>
+                        </td>
+                        <td class="message-cell">{{ message.content }}</td>
+                        <td class="time-cell">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="metadata-column">{{ message.message_id }}</td>
+                        <td class="metadata-column">{{ message.dialog_type }}</td>
+                        <td class="metadata-column">
+                          {% if message.is_ton_dev %}
+                          <span class="badge bg-primary">Yes</span>
+                          {% else %}
+                          <span class="badge bg-secondary">No</span>
+                          {% endif %}
+                        </td>
+                      </tr>
                       {% else %}
-                      <span class="badge bg-secondary">No</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="6" class="text-center p-4">
-                      <div class="alert alert-info mb-0">
-                        <h4 class="alert-heading">Server is running!</h4>
-                        <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
-                      </div>
-                    </td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
+                      <tr>
+                        <td colspan="6" class="text-center p-4">
+                          <div class="alert alert-info mb-0">
+                            <p>No incoming messages found.</p>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan="6" class="text-center p-4">
+                          <div class="alert alert-info mb-0">
+                            <h4 class="alert-heading">Server is running!</h4>
+                            <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+              
+              <!-- Outgoing Messages -->
+              <div class="tab-pane fade" id="outgoing" role="tabpanel" aria-labelledby="outgoing-tab">
+                <table class="table table-hover message-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Channel</th>
+                      <th>Message</th>
+                      <th>Time</th>
+                      <th class="metadata-column">ID</th>
+                      <th class="metadata-column">Type</th>
+                      <th class="metadata-column">Tagged</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if messages %}
+                      {% for message in messages if message.is_outgoing %}
+                      <tr>
+                        <td class="channel-cell">
+                          <span class="channel-title">{{ message.channel_title }}</span>
+                        </td>
+                        <td class="message-cell">{{ message.content }}</td>
+                        <td class="time-cell">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="metadata-column">{{ message.message_id }}</td>
+                        <td class="metadata-column">{{ message.dialog_type }}</td>
+                        <td class="metadata-column">
+                          {% if message.is_ton_dev %}
+                          <span class="badge bg-primary">Yes</span>
+                          {% else %}
+                          <span class="badge bg-secondary">No</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% else %}
+                      <tr>
+                        <td colspan="6" class="text-center p-4">
+                          <div class="alert alert-info mb-0">
+                            <p>No outgoing messages found.</p>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan="6" class="text-center p-4">
+                          <div class="alert alert-info mb-0">
+                            <h4 class="alert-heading">Server is running!</h4>
+                            <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+              
+              <!-- All Messages -->
+              <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
+                <table class="table table-hover message-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Channel</th>
+                      <th>Message</th>
+                      <th>Time</th>
+                      <th class="metadata-column">ID</th>
+                      <th class="metadata-column">Type</th>
+                      <th class="metadata-column">Direction</th>
+                      <th class="metadata-column">Tagged</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if messages %}
+                      {% for message in messages %}
+                      <tr>
+                        <td class="channel-cell">
+                          <span class="channel-title">{{ message.channel_title }}</span>
+                        </td>
+                        <td class="message-cell">{{ message.content }}</td>
+                        <td class="time-cell">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="metadata-column">{{ message.message_id }}</td>
+                        <td class="metadata-column">{{ message.dialog_type }}</td>
+                        <td class="metadata-column">
+                          {% if message.is_outgoing %}
+                          <span class="badge bg-info">Outgoing</span>
+                          {% else %}
+                          <span class="badge bg-success">Incoming</span>
+                          {% endif %}
+                        </td>
+                        <td class="metadata-column">
+                          {% if message.is_ton_dev %}
+                          <span class="badge bg-primary">Yes</span>
+                          {% else %}
+                          <span class="badge bg-secondary">No</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan="7" class="text-center p-4">
+                          <div class="alert alert-info mb-0">
+                            <h4 class="alert-heading">Server is running!</h4>
+                            <p>The collector is currently gathering messages in the background. Check back shortly to see the latest messages.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
