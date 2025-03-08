@@ -28,6 +28,10 @@
               <span class="stat-value">{{ channels|length }}</span>
               <span class="stat-label">Cached Channels</span>
             </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ last_3_days_count }}</span>
+              <span class="stat-label">Last 3 Days</span>
+            </div>
           </div>
         </div>
       </div>
@@ -51,6 +55,57 @@
           </div>
           <div class="text-center mt-2">
             <a href="#channel-list" class="btn btn-sm btn-outline-primary">View All Channels</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Message Activity Leaderboard -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Channel Activity Leaderboard</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover leaderboard-table mb-0">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Incoming</th>
+                  <th>Outgoing</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for channel in channel_activity %}
+                <tr>
+                  <td>{{ channel.channel_title }}</td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar bg-success" role="progressbar" 
+                           style="width: {{ (channel.incoming / channel.total * 100) if channel.total else 0 }}%" 
+                           aria-valuenow="{{ channel.incoming }}" aria-valuemin="0" aria-valuemax="{{ channel.total }}">
+                        {{ channel.incoming }}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar bg-info" role="progressbar" 
+                           style="width: {{ (channel.outgoing / channel.total * 100) if channel.total else 0 }}%" 
+                           aria-valuenow="{{ channel.outgoing }}" aria-valuemin="0" aria-valuemax="{{ channel.total }}">
+                        {{ channel.outgoing }}
+                      </div>
+                    </div>
+                  </td>
+                  <td><strong>{{ channel.total }}</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

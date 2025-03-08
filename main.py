@@ -21,6 +21,20 @@ def index():
         # Get TON dev message count
         ton_count = db.session.query(TelegramMessage).filter_by(is_ton_dev=True).count()
         
+        # Get last 3 days statistics
+        three_days_ago = datetime.utcnow() - timedelta(days=3)
+        last_3_days_count = db.session.query(TelegramMessage).filter(
+            TelegramMessage.timestamp >= three_days_ago
+        ).count()
+        
+        # Get message leaderboard by incoming and outgoing messages
+        channel_activity = db.session.query(
+            TelegramMessage.channel_title,
+            db.func.count(TelegramMessage.id).filter(TelegramMessage.is_outgoing == False).label('incoming'),
+            db.func.count(TelegramMessage.id).filter(TelegramMessage.is_outgoing == True).label('outgoing'),
+            db.func.count(TelegramMessage.id).label('total')
+        ).group_by(TelegramMessage.channel_title).order_by(db.desc('total')).limit(10).all()
+        
         # Get channel statistics
         channels = db.session.query(
             TelegramMessage.channel_title,
@@ -41,6 +55,8 @@ def index():
                           messages=messages, 
                           all_count=all_count,
                           ton_count=ton_count,
+                          last_3_days_count=last_3_days_count,
+                          channel_activity=channel_activity,
                           channels=channels)
 
 @app.route('/status')
