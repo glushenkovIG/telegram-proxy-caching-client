@@ -27,6 +27,17 @@
               <span class="stat-value">{{ channels|length }}</span>
               <span class="stat-label">Cached Channels</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Last 7 Days Statistics Section -->
+    <div class="col-md-6">
+      <div class="card stat-card">
+        <div class="card-body">
+          <h5 class="card-title">Recent Activity</h5>
+          <div class="stats-container">
             <div class="stat-item">
               <span class="stat-value">{{ last_3_days_count }}</span>
               <span class="stat-label">Last 3 Days</span>
@@ -119,8 +130,8 @@
   <div class="row mb-4">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">Last 7 Days Activity Leaderboard</h5>
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Recent Activity (Last 7 Days)</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
