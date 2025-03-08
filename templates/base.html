@@ -4,59 +4,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON Dev Messages</title>
+    <title>Telegram Cache Proxy</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom styles -->
     <style>
         body {
-            background-color: #121212;
-            color: #e1e1e1;
+            background-color: #f8f9fa;
+            color: #212529;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .navbar {
-            background-color: #1e1e1e;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .navbar-brand {
             font-weight: bold;
-            color: white;
+            color: #0088cc;
         }
         .main-container {
             padding-top: 20px;
             padding-bottom: 40px;
         }
         .card {
-            background-color: #1e1e1e;
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            border: 1px solid #333;
+            border: 1px solid #e9ecef;
         }
         .card-header {
-            background-color: #252525;
-            border-bottom: 1px solid #333;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
             font-weight: bold;
-            color: #e1e1e1;
+            color: #212529;
         }
         .card-body {
-            color: #e1e1e1;
+            color: #212529;
         }
         .badge.bg-primary {
             background-color: #0088cc !important;
         }
         .timestamp {
-            color: #9e9e9e;
+            color: #6c757d;
             font-size: 0.85rem;
         }
         .text-muted {
-            color: #9e9e9e !important;
+            color: #6c757d !important;
         }
         h1, .display-4 {
-            color: #ffffff;
+            color: #212529;
         }
         .lead {
-            color: #b0b0b0;
+            color: #495057;
         }
         
         /* New styles for improved UI */
@@ -82,7 +82,7 @@
         .stat-label {
             display: block;
             font-size: 0.9rem;
-            color: #9e9e9e;
+            color: #6c757d;
         }
         .top-channels {
             margin-bottom: 10px;
@@ -91,7 +91,7 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #e9ecef;
         }
         .channel-item:last-child {
             border-bottom: none;
@@ -110,17 +110,17 @@
         }
         .message-count {
             font-size: 0.85rem;
-            color: #9e9e9e;
+            color: #6c757d;
         }
         .message-table, .channel-table {
             margin-bottom: 0;
         }
         .message-table th, .channel-table th {
-            background-color: #252525;
-            border-color: #333;
+            background-color: #f8f9fa;
+            border-color: #e9ecef;
         }
         .message-table td, .channel-table td {
-            border-color: #333;
+            border-color: #e9ecef;
             vertical-align: middle;
         }
         .channel-cell {
@@ -152,12 +152,18 @@
             background-color: #0088cc;
             color: white;
         }
+        .table-hover tbody tr:hover {
+            background-color: #f1f8ff;
+        }
+        .bg-secondary {
+            background-color: #6c757d !important;
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
-            <a class="navbar-brand" href="/">TON Analytics</a>
+            <a class="navbar-brand" href="/">Telegram Cache Proxy</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

@@ -8,7 +8,7 @@ import os
 
 @app.route('/')
 def index():
-    # Fetch data for combined view
+    # Fetch data for Telegram Cache Proxy dashboard
     messages = []
     all_count = 0
     ton_count = 0
