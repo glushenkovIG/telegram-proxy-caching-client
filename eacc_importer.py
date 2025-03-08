@@ -1,3 +1,4 @@
+
 import os
 import asyncio
 import logging
@@ -94,191 +95,191 @@ async def import_eacc_messages():
         latest_id = result[0] if result else 0
         logger.info(f"Latest message ID in EACC database: {latest_id}")
 
-            # Batch size for processing messages
+        # Batch size for processing messages
         batch_size = 100 # Increased batch size
         total_imported = 0
-            total_messages_estimate = 107000  # Total messages in the chat
+        total_messages_estimate = 107000  # Total messages in the chat
 
-            # Calculate time estimates
-            start_time = datetime.now()
+        # Calculate time estimates
+        start_time = datetime.now()
 
-            # We'll use larger batches while still being careful with rate limits
-            messages_to_process = []
+        # We'll use larger batches while still being careful with rate limits
+        messages_to_process = []
 
-            # Start from the beginning if no messages are found
-            logger.info(f"Fetching messages (limit: {batch_size})...")
+        # Start from the beginning if no messages are found
+        logger.info(f"Fetching messages (limit: {batch_size})...")
 
-            batch_counter = 0
-            offset_id = 0  # Start from most recent messages
+        batch_counter = 0
+        offset_id = 0  # Start from most recent messages
 
-            # If we have messages in the DB already, start from the latest one
-            # Otherwise, we'll get all messages
+        # If we have messages in the DB already, start from the latest one
+        # Otherwise, we'll get all messages
 
-            while True:
-                batch_counter += 1
-                logger.info(f"Fetching batch #{batch_counter} (offset_id: {offset_id})")
+        while True:
+            batch_counter += 1
+            logger.info(f"Fetching batch #{batch_counter} (offset_id: {offset_id})")
 
-                # Get messages with a small batch size to avoid rate limits
-                messages = await client.get_messages(
-                    entity, 
-                    limit=batch_size,
-                    offset_id=offset_id
-                )
+            # Get messages with a small batch size to avoid rate limits
+            messages = await client.get_messages(
+                entity, 
+                limit=batch_size,
+                offset_id=offset_id
+            )
 
-                if not messages or len(messages) == 0:
-                    logger.info("No more messages to process")
-                    break
+            if not messages or len(messages) == 0:
+                logger.info("No more messages to process")
+                break
 
-                # Update offset for next batch
-                offset_id = messages[-1].id
+            # Update offset for next batch
+            offset_id = messages[-1].id
 
-                for message in messages:
-                    # Skip if we've already processed this message
-                    if message.id <= latest_id and latest_id != 0:
-                        logger.debug(f"Skipping message {message.id} - already processed")
-                        continue
+            for message in messages:
+                # Skip if we've already processed this message
+                if message.id <= latest_id and latest_id != 0:
+                    logger.debug(f"Skipping message {message.id} - already processed")
+                    continue
 
-                    if message.text:
-                        try:
-                            is_outgoing = getattr(message, 'out', False)
-
-                            # Create new message object
-                            # Get sender information
-                            sender = await message.get_sender()
-                            sender_id = str(sender.id) if sender else None
-                            sender_username = getattr(sender, 'username', None)
-                            
-                            new_msg = TelegramMessage(
-                                message_id=message.id,
-                                channel_id=channel_id,
-                                channel_title=channel_title,
-                                content=message.text,
-                                timestamp=message.date,
-                                is_ton_dev=False,  # Not a TON dev channel
-                                is_outgoing=is_outgoing,
-                                dialog_type=dialog_type,
-                                sender_id=sender_id,
-                                sender_username=sender_username
-                            )
-
-                            messages_to_process.append(new_msg)
-
-                            if len(messages_to_process) >= 10:  # Commit in smaller chunks
-                                # Add retry logic for database operations
-                                max_retries = 5
-                                retry_count = 0
-                                retry_delay = 1  # Start with 1 second delay
-                                
-                                while retry_count < max_retries:
-                                    try:
-                                        for msg in messages_to_process:
-                                            cursor.execute(
-                                                """
-                                                INSERT INTO telegram_messages 
-                                                (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type, sender_id, sender_username)
-                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                                """,
-                                                (
-                                                    msg.message_id, 
-                                                    msg.channel_id, 
-                                                    msg.channel_title, 
-                                                    msg.content, 
-                                                    msg.timestamp, 
-                                                    msg.is_ton_dev, 
-                                                    msg.is_outgoing, 
-                                                    msg.dialog_type,
-                                                    msg.sender_id,
-                                                    msg.sender_username
-                                                )
-                                            )
-                                        conn.commit()
-                                        total_imported += len(messages_to_process)
-                                        logger.info(f"Saved {len(messages_to_process)} messages, total so far: {total_imported}")
-                                        messages_to_process = []
-                                        break  # Successfully committed, exit retry loop
-                                    except Exception as e:
-                                        if "database is locked" in str(e).lower():
-                                            retry_count += 1
-                                            logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
-                                            await asyncio.sleep(retry_delay)
-                                            # Exponential backoff with jitter
-                                            retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
-                                        else:
-                                            logger.error(f"Error saving messages: {str(e)}")
-                                            break
-                                
-                                if retry_count >= max_retries:
-                                    logger.error("Max retries exceeded for database commit")
-                                
-                                # Sleep to avoid hitting rate limits
-                                await asyncio.sleep(2)  # Reduced sleep time as requested
-                        except Exception as e:
-                            logger.error(f"Error processing message {message.id}: {str(e)}")
-
-                # If we didn't get a full batch, we've reached the end
-                if len(messages) < batch_size:
-                    logger.info("Reached the end of available messages")
-                    break
-
-                # Sleep between batches to avoid rate limits
-                elapsed_time = datetime.now() - start_time
-                messages_processed = total_imported
-                messages_remaining = total_messages_estimate - messages_processed
-                try:
-                    messages_per_second = messages_processed / elapsed_time.total_seconds()
-                    estimated_remaining_time = timedelta(seconds=(messages_remaining / messages_per_second))
-                    logger.info(f"Estimated time remaining: {estimated_remaining_time}")
-                except ZeroDivisionError:
-                    logger.info("Not enough data to estimate time remaining.")
-
-                logger.info(f"Waiting 2 seconds before next batch")
-                await asyncio.sleep(2)  # Reduced sleep time as requested
-
-            # Save any remaining messages
-            if messages_to_process:
-                max_retries = 5
-                retry_count = 0
-                retry_delay = 1
-                
-                while retry_count < max_retries:
+                if message.text:
                     try:
-                        for msg in messages_to_process:
-                            cursor.execute(
-                                """
-                                INSERT INTO telegram_messages 
-                                (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type, sender_id, sender_username)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                """,
-                                (
-                                    msg.message_id, 
-                                    msg.channel_id, 
-                                    msg.channel_title, 
-                                    msg.content, 
-                                    msg.timestamp, 
-                                    msg.is_ton_dev, 
-                                    msg.is_outgoing, 
-                                    msg.dialog_type,
-                                    msg.sender_id,
-                                    msg.sender_username
-                                )
-                            )
-                        conn.commit()
-                        total_imported += len(messages_to_process)
-                        break
-                    except Exception as e:
-                        if "database is locked" in str(e).lower():
-                            retry_count += 1
-                            logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
-                            await asyncio.sleep(retry_delay)
-                            retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
-                        else:
-                            logger.error(f"Error saving final messages batch: {str(e)}")
-                            break
-                
-                if retry_count >= max_retries:
-                    logger.error("Max retries exceeded for final database commit")
+                        is_outgoing = getattr(message, 'out', False)
 
-            logger.info(f"Import completed. Total messages imported: {total_imported}")
+                        # Create new message object
+                        # Get sender information
+                        sender = await message.get_sender()
+                        sender_id = str(sender.id) if sender else None
+                        sender_username = getattr(sender, 'username', None)
+                        
+                        new_msg = TelegramMessage(
+                            message_id=message.id,
+                            channel_id=channel_id,
+                            channel_title=channel_title,
+                            content=message.text,
+                            timestamp=message.date,
+                            is_ton_dev=False,  # Not a TON dev channel
+                            is_outgoing=is_outgoing,
+                            dialog_type=dialog_type,
+                            sender_id=sender_id,
+                            sender_username=sender_username
+                        )
+
+                        messages_to_process.append(new_msg)
+
+                        if len(messages_to_process) >= 10:  # Commit in smaller chunks
+                            # Add retry logic for database operations
+                            max_retries = 5
+                            retry_count = 0
+                            retry_delay = 1  # Start with 1 second delay
+                            
+                            while retry_count < max_retries:
+                                try:
+                                    for msg in messages_to_process:
+                                        cursor.execute(
+                                            """
+                                            INSERT INTO telegram_messages 
+                                            (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type, sender_id, sender_username)
+                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            """,
+                                            (
+                                                msg.message_id, 
+                                                msg.channel_id, 
+                                                msg.channel_title, 
+                                                msg.content, 
+                                                msg.timestamp, 
+                                                msg.is_ton_dev, 
+                                                msg.is_outgoing, 
+                                                msg.dialog_type,
+                                                msg.sender_id,
+                                                msg.sender_username
+                                            )
+                                        )
+                                    conn.commit()
+                                    total_imported += len(messages_to_process)
+                                    logger.info(f"Saved {len(messages_to_process)} messages, total so far: {total_imported}")
+                                    messages_to_process = []
+                                    break  # Successfully committed, exit retry loop
+                                except Exception as e:
+                                    if "database is locked" in str(e).lower():
+                                        retry_count += 1
+                                        logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
+                                        await asyncio.sleep(retry_delay)
+                                        # Exponential backoff with jitter
+                                        retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
+                                    else:
+                                        logger.error(f"Error saving messages: {str(e)}")
+                                        break
+                            
+                            if retry_count >= max_retries:
+                                logger.error("Max retries exceeded for database commit")
+                            
+                            # Sleep to avoid hitting rate limits
+                            await asyncio.sleep(2)  # Reduced sleep time as requested
+                    except Exception as e:
+                        logger.error(f"Error processing message {message.id}: {str(e)}")
+
+            # If we didn't get a full batch, we've reached the end
+            if len(messages) < batch_size:
+                logger.info("Reached the end of available messages")
+                break
+
+            # Sleep between batches to avoid rate limits
+            elapsed_time = datetime.now() - start_time
+            messages_processed = total_imported
+            messages_remaining = total_messages_estimate - messages_processed
+            try:
+                messages_per_second = messages_processed / elapsed_time.total_seconds()
+                estimated_remaining_time = timedelta(seconds=(messages_remaining / messages_per_second))
+                logger.info(f"Estimated time remaining: {estimated_remaining_time}")
+            except ZeroDivisionError:
+                logger.info("Not enough data to estimate time remaining.")
+
+            logger.info(f"Waiting 2 seconds before next batch")
+            await asyncio.sleep(2)  # Reduced sleep time as requested
+
+        # Save any remaining messages
+        if messages_to_process:
+            max_retries = 5
+            retry_count = 0
+            retry_delay = 1
+            
+            while retry_count < max_retries:
+                try:
+                    for msg in messages_to_process:
+                        cursor.execute(
+                            """
+                            INSERT INTO telegram_messages 
+                            (message_id, channel_id, channel_title, content, timestamp, is_ton_dev, is_outgoing, dialog_type, sender_id, sender_username)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                msg.message_id, 
+                                msg.channel_id, 
+                                msg.channel_title, 
+                                msg.content, 
+                                msg.timestamp, 
+                                msg.is_ton_dev, 
+                                msg.is_outgoing, 
+                                msg.dialog_type,
+                                msg.sender_id,
+                                msg.sender_username
+                            )
+                        )
+                    conn.commit()
+                    total_imported += len(messages_to_process)
+                    break
+                except Exception as e:
+                    if "database is locked" in str(e).lower():
+                        retry_count += 1
+                        logger.warning(f"Database locked, retry attempt {retry_count}/{max_retries} after {retry_delay}s")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay = min(retry_delay * 2, 30) + (random.random() * 2)
+                    else:
+                        logger.error(f"Error saving final messages batch: {str(e)}")
+                        break
+            
+            if retry_count >= max_retries:
+                logger.error("Max retries exceeded for final database commit")
+
+        logger.info(f"Import completed. Total messages imported: {total_imported}")
 
     except Exception as e:
         logger.error(f"Error importing EACC messages: {str(e)}")
