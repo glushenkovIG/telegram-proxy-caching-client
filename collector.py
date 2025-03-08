@@ -94,6 +94,16 @@ async def collect_messages():
                                             is_outgoing = getattr(message, 'out', False)
                                             is_ton_dev = should_be_ton_dev(channel_title)
 
+                                            # Get sender information
+                                            try:
+                                                sender = await message.get_sender()
+                                                sender_id = str(sender.id) if sender else None
+                                                sender_username = getattr(sender, 'username', None)
+                                            except Exception as e:
+                                                logger.warning(f"Could not get sender info: {str(e)}")
+                                                sender_id = None
+                                                sender_username = None
+                                                
                                             new_msg = TelegramMessage(
                                                 message_id=message.id,
                                                 channel_id=channel_id,
@@ -102,7 +112,9 @@ async def collect_messages():
                                                 timestamp=message.date,
                                                 is_ton_dev=is_ton_dev,
                                                 is_outgoing=is_outgoing,
-                                                dialog_type=dialog_type
+                                                dialog_type=dialog_type,
+                                                sender_id=sender_id,
+                                                sender_username=sender_username
                                             )
                                             db.session.add(new_msg)
                                             message_batch.append(message.id)
