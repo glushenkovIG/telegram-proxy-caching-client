@@ -32,6 +32,10 @@
               <span class="stat-value">{{ last_3_days_count }}</span>
               <span class="stat-label">Last 3 Days</span>
             </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ last_7_days_count }}</span>
+              <span class="stat-label">Last 7 Days</span>
+            </div>
           </div>
         </div>
       </div>
@@ -66,7 +70,7 @@
     <div class="col-12">
       <div class="card">
         <div class="card-header">
-          <h5 class="mb-0">Channel Activity Leaderboard</h5>
+          <h5 class="mb-0">Overall Channel Activity Leaderboard</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -81,6 +85,57 @@
               </thead>
               <tbody>
                 {% for channel in channel_activity %}
+                <tr>
+                  <td>{{ channel.channel_title }}</td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar bg-success" role="progressbar" 
+                           style="width: {{ (channel.incoming / channel.total * 100) if channel.total else 0 }}%" 
+                           aria-valuenow="{{ channel.incoming }}" aria-valuemin="0" aria-valuemax="{{ channel.total }}">
+                        {{ channel.incoming }}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar bg-info" role="progressbar" 
+                           style="width: {{ (channel.outgoing / channel.total * 100) if channel.total else 0 }}%" 
+                           aria-valuenow="{{ channel.outgoing }}" aria-valuemin="0" aria-valuemax="{{ channel.total }}">
+                        {{ channel.outgoing }}
+                      </div>
+                    </div>
+                  </td>
+                  <td><strong>{{ channel.total }}</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Last 7 Days Activity Leaderboard -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Last 7 Days Activity Leaderboard</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover leaderboard-table mb-0">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Incoming</th>
+                  <th>Outgoing</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for channel in last_7_days_activity %}
                 <tr>
                   <td>{{ channel.channel_title }}</td>
                   <td>

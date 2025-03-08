@@ -28,12 +28,28 @@ def index():
             TelegramMessage.timestamp >= three_days_ago
         ).count()
         
-        # Get message leaderboard by incoming and outgoing messages
+        # Get last 7 days statistics
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        last_7_days_count = db.session.query(TelegramMessage).filter(
+            TelegramMessage.timestamp >= seven_days_ago
+        ).count()
+        
+        # Get message leaderboard by incoming and outgoing messages (overall)
         channel_activity = db.session.query(
             TelegramMessage.channel_title,
             db.func.count(TelegramMessage.id).filter(TelegramMessage.is_outgoing == False).label('incoming'),
             db.func.count(TelegramMessage.id).filter(TelegramMessage.is_outgoing == True).label('outgoing'),
             db.func.count(TelegramMessage.id).label('total')
+        ).group_by(TelegramMessage.channel_title).order_by(db.desc('total')).limit(10).all()
+        
+        # Get last 7 days activity leaderboard
+        last_7_days_activity = db.session.query(
+            TelegramMessage.channel_title,
+            db.func.count(TelegramMessage.id).filter(TelegramMessage.is_outgoing == False).label('incoming'),
+            db.func.count(TelegramMessage.id).filter(TelegramMessage.is_outgoing == True).label('outgoing'),
+            db.func.count(TelegramMessage.id).label('total')
+        ).filter(
+            TelegramMessage.timestamp >= seven_days_ago
         ).group_by(TelegramMessage.channel_title).order_by(db.desc('total')).limit(10).all()
         
         # Get channel statistics
@@ -57,7 +73,9 @@ def index():
                           all_count=all_count,
                           ton_count=ton_count,
                           last_3_days_count=last_3_days_count,
+                          last_7_days_count=last_7_days_count,
                           channel_activity=channel_activity,
+                          last_7_days_activity=last_7_days_activity,
                           channels=channels)
 
 @app.route('/status')
