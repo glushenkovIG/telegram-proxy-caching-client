@@ -28,57 +28,6 @@ def index():
             TelegramMessage.timestamp >= three_days_ago
         ).count()
         
-        # Get last 7 days statistics
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
-        last_7_days_count = db.session.query(TelegramMessage).filter(
-            TelegramMessage.timestamp >= seven_days_ago
-        ).count()
-        
-        # Get 7-day channel activity leaderboard
-        seven_day_activity = db.session.query(
-            TelegramMessage.channel_title,
-            db.func.count(TelegramMessage.id).filter(
-                TelegramMessage.is_outgoing == False,
-                TelegramMessage.timestamp >= seven_days_ago
-            ).label('incoming'),
-            db.func.count(TelegramMessage.id).filter(
-                TelegramMessage.is_outgoing == True,
-                TelegramMessage.timestamp >= seven_days_ago
-            ).label('outgoing'),
-            db.func.count(TelegramMessage.id).filter(
-                TelegramMessage.timestamp >= seven_days_ago
-            ).label('total')
-        ).group_by(TelegramMessage.channel_title).order_by(db.desc('total')).limit(10).all()
-</old_str>
-<new_str>
-        # Get last 3 days statistics
-        three_days_ago = datetime.utcnow() - timedelta(days=3)
-        last_3_days_count = db.session.query(TelegramMessage).filter(
-            TelegramMessage.timestamp >= three_days_ago
-        ).count()
-        
-        # Get last 7 days statistics
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
-        last_7_days_count = db.session.query(TelegramMessage).filter(
-            TelegramMessage.timestamp >= seven_days_ago
-        ).count()
-        
-        # Get 7-day channel activity leaderboard
-        seven_day_activity = db.session.query(
-            TelegramMessage.channel_title,
-            db.func.count(TelegramMessage.id).filter(
-                TelegramMessage.is_outgoing == False,
-                TelegramMessage.timestamp >= seven_days_ago
-            ).label('incoming'),
-            db.func.count(TelegramMessage.id).filter(
-                TelegramMessage.is_outgoing == True,
-                TelegramMessage.timestamp >= seven_days_ago
-            ).label('outgoing'),
-            db.func.count(TelegramMessage.id).filter(
-                TelegramMessage.timestamp >= seven_days_ago
-            ).label('total')
-        ).group_by(TelegramMessage.channel_title).order_by(db.desc('total')).limit(10).all()
-        
         # Get message leaderboard by incoming and outgoing messages
         channel_activity = db.session.query(
             TelegramMessage.channel_title,
@@ -108,9 +57,7 @@ def index():
                           all_count=all_count,
                           ton_count=ton_count,
                           last_3_days_count=last_3_days_count,
-                          last_7_days_count=last_7_days_count,
                           channel_activity=channel_activity,
-                          seven_day_activity=seven_day_activity,
                           channels=channels)
 
 @app.route('/status')
