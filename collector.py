@@ -17,6 +17,45 @@ logger = logging.getLogger(__name__)
 # Global collector thread reference
 collector_thread = None
 
+async def setup_telegram_session():
+    """Set up a new Telegram session"""
+    try:
+        # Use Replit's persistent storage for session
+        session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+
+        # Get credentials from environment
+        api_id = int(os.environ.get('TELEGRAM_API_ID'))
+        api_hash = os.environ.get('TELEGRAM_API_HASH')
+        phone = os.environ.get('TELEGRAM_PHONE')
+
+        # Initialize client
+        client = TelegramClient(
+            session_path,
+            api_id=api_id,
+            api_hash=api_hash,
+            system_version="4.16.30-vxCUSTOM"
+        )
+
+        await client.connect()
+
+        if not await client.is_user_authorized():
+            # Send code request
+            await client.send_code_request(phone)
+
+            # Wait for code to be entered
+            code = os.environ.get('TELEGRAM_CODE')
+            if code:
+                await client.sign_in(phone, code)
+                logger.info("Successfully authenticated with Telegram")
+            else:
+                logger.error("No verification code provided")
+
+        await client.disconnect()
+        return True
+    except Exception as e:
+        logger.error(f"Error setting up Telegram session: {str(e)}")
+        return False
+
 async def collect_messages():
     """Main collection function"""
     client = None
@@ -162,7 +201,6 @@ async def collect_messages():
                 logger.warning("ACTION REQUIRED: Please visit the setup page to create a new session")
 
             return
-
     except Exception as e:
         logger.error(f"Fatal collector error: {str(e)}")
     finally:

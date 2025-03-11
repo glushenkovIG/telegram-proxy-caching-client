@@ -92,46 +92,14 @@
           <h2 class="mb-0">Telegram Session Setup</h2>
         </div>
         <div class="card-body">
-          {% if is_deployment %}
-          <div class="alert alert-info">
-            <p><strong>Deployment Environment Detected!</strong></p>
-            <p>When running in a deployment environment, Telegram sessions may become invalid due to IP address changes.</p>
-          </div>
-          {% endif %}
-
-          {% if session_exists %}
-          <div class="alert alert-warning">
-            <p><strong>Existing Session Found</strong></p>
-            <p>There's already a session file, but it might be invalid. Setting up a new session will overwrite it.</p>
-          </div>
-          {% endif %}
-
-          <h4 class="mb-3">Instructions</h4>
-          <ol>
-            <li>Make sure you have your Telegram API credentials ready (API ID and API Hash)</li>
-            <li>Enter your API credentials below</li>
-            <li>You'll need to authenticate with your Telegram account</li>
-            <li>Once completed, the collector will start automatically</li>
-          </ol>
-
           <form id="setupForm" class="mt-4">
             <div class="mb-3">
-              <label for="apiId" class="form-label">Telegram API ID</label>
-              <input type="text" class="form-control" id="apiId" name="apiId" placeholder="Enter your API ID" required>
-              <small class="form-text text-muted">You can get this from my.telegram.org</small>
-            </div>
-            <div class="mb-3">
-              <label for="apiHash" class="form-label">Telegram API Hash</label>
-              <input type="text" class="form-control" id="apiHash" name="apiHash" placeholder="Enter your API Hash" required>
-              <small class="form-text text-muted">You can get this from my.telegram.org</small>
-            </div>
-            <div class="mb-3">
               <label for="phoneNumber" class="form-label">Phone Number</label>
-              <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" placeholder="+1234567890" required>
-              <small class="form-text text-muted">Your Telegram account phone number in international format</small>
+              <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" value="+41762636496" readonly>
+              <small class="form-text text-muted">Your Telegram account phone number</small>
             </div>
             <div class="d-grid">
-              <button type="submit" class="btn btn-primary">Start Setup</button>
+              <button type="submit" class="btn btn-primary">Start Authentication</button>
             </div>
           </form>
 
@@ -162,4 +130,70 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const setupForm = document.getElementById('setupForm');
+  const authProgress = document.getElementById('authProgress');
+  const statusMessage = document.getElementById('statusMessage');
+  const codeInputContainer = document.getElementById('codeInputContainer');
+  const submitCodeBtn = document.getElementById('submitCode');
+
+  setupForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Show progress
+    setupForm.classList.add('d-none');
+    authProgress.classList.remove('d-none');
+
+    try {
+      const response = await fetch('/setup_process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: document.getElementById('phoneNumber').value
+        })
+      });
+
+      const data = await response.json();
+      if (data.status === 'code_sent') {
+        statusMessage.textContent = 'Verification code sent to your Telegram app';
+        codeInputContainer.classList.remove('d-none');
+      } else {
+        throw new Error(data.message || 'Failed to start authentication');
+      }
+    } catch (error) {
+      statusMessage.textContent = `Error: ${error.message}`;
+      statusMessage.classList.add('text-danger');
+    }
+  });
+
+  submitCodeBtn.addEventListener('click', async function() {
+    const code = document.getElementById('verificationCode').value;
+    if (!code) return;
+
+    try {
+      const response = await fetch('/verify_code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code })
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        window.location.href = '/setup_complete';
+      } else {
+        throw new Error(data.message || 'Invalid code');
+      }
+    } catch (error) {
+      statusMessage.textContent = `Error: ${error.message}`;
+      statusMessage.classList.add('text-danger');
+    }
+  });
+});
+</script>
 {% endblock %}

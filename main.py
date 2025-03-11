@@ -1,10 +1,11 @@
 from flask import render_template, jsonify, request
 from app import app, db, logger
-from collector import ensure_single_collector
+from collector import ensure_single_collector, setup_telegram_session
 from models import TelegramMessage
 from datetime import datetime, timedelta
 import atexit
 import os
+import json
 
 @app.route('/')
 def index():
@@ -105,15 +106,40 @@ def setup():
 
 @app.route('/setup_process', methods=['POST'])
 def setup_process():
-    """Process the setup form and create a new session"""
+    """Process the setup form and send verification code"""
     try:
-        api_id = request.form.get('api_id')
-        api_hash = request.form.get('api_hash')
-        phone = request.form.get('phone')
+        data = request.get_json()
+        phone = data.get('phone')
 
-        # Store credentials temporarily for session creation
-        os.environ['TELEGRAM_API_ID'] = api_id
-        os.environ['TELEGRAM_API_HASH'] = api_hash
+        # Store phone number temporarily for session creation
+        os.environ['TELEGRAM_PHONE'] = phone
+
+        # Start the Telegram session setup
+        setup_telegram_session()
+
+        return jsonify({
+            "status": "code_sent",
+            "message": "Verification code sent to your Telegram app"
+        })
+    except Exception as e:
+        logger.error(f"Setup process failed: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Setup failed: {str(e)}"
+        }), 500
+
+@app.route('/verify_code', methods=['POST'])
+def verify_code():
+    """Verify the Telegram authentication code"""
+    try:
+        data = request.get_json()
+        code = data.get('code')
+
+        if not code:
+            return jsonify({"status": "error", "message": "No verification code provided"}), 400
+
+        # Store verification code temporarily
+        os.environ['TELEGRAM_CODE'] = code
 
         # Restart collector to create new session
         if collector_thread and collector_thread.is_alive():
@@ -122,13 +148,13 @@ def setup_process():
 
         return jsonify({
             "status": "success",
-            "message": "Configuration saved successfully. Please restart the collector."
+            "message": "Authentication successful"
         })
     except Exception as e:
-        logger.error(f"Setup process failed: {str(e)}")
+        logger.error(f"Code verification failed: {str(e)}")
         return jsonify({
             "status": "error",
-            "message": f"Setup failed: {str(e)}"
+            "message": f"Verification failed: {str(e)}"
         }), 500
 
 @app.route('/setup_complete')
