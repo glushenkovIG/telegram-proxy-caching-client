@@ -22,12 +22,24 @@ async def setup_telegram_session():
     try:
         # Use Replit's persistent storage for session
         session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+        logger.info(f"Setting up Telegram session at: {session_path}")
 
         # Get credentials from environment
         api_id = int(os.environ.get('TELEGRAM_API_ID'))
         api_hash = os.environ.get('TELEGRAM_API_HASH')
         phone = os.environ.get('TELEGRAM_PHONE')
 
+        logger.info(f"Got phone number: {phone}")
+        logger.debug(f"Using API ID: {api_id}")
+
+        if not all([api_id, api_hash, phone]):
+            logger.error("Missing required credentials:")
+            logger.error(f"API ID present: {bool(api_id)}")
+            logger.error(f"API Hash present: {bool(api_hash)}")
+            logger.error(f"Phone present: {bool(phone)}")
+            return False
+
+        logger.info("Creating TelegramClient with provided credentials")
         # Initialize client
         client = TelegramClient(
             session_path,
@@ -37,21 +49,42 @@ async def setup_telegram_session():
         )
 
         await client.connect()
+        logger.info("Connected to Telegram servers")
 
         if not await client.is_user_authorized():
-            # Send code request
-            await client.send_code_request(phone)
+            try:
+                logger.info(f"Sending code request to: {phone}")
+                # Send code request
+                await client.send_code_request(phone)
+                logger.info("Verification code sent successfully")
 
-            # Wait for code to be entered
-            code = os.environ.get('TELEGRAM_CODE')
-            if code:
-                await client.sign_in(phone, code)
-                logger.info("Successfully authenticated with Telegram")
-            else:
-                logger.error("No verification code provided")
+                # Wait for code to be entered
+                code = os.environ.get('TELEGRAM_CODE')
+                if code:
+                    logger.info("Signing in with provided code")
+                    await client.sign_in(phone, code)
+                    logger.info("Successfully authenticated with Telegram")
+                else:
+                    logger.error("No verification code provided in environment")
+                    return False
+            except Exception as e:
+                logger.error(f"Error during authentication: {str(e)}")
+                if "phone" in str(e).lower():
+                    logger.error("Phone number format or validation error")
+                elif "code" in str(e).lower():
+                    logger.error("Invalid verification code")
+                return False
 
         await client.disconnect()
-        return True
+
+        # Verify session file was created
+        if os.path.exists(session_path) and os.path.getsize(session_path) > 0:
+            logger.info(f"Session file created successfully at {session_path}")
+            return True
+        else:
+            logger.error("Session file was not created successfully")
+            return False
+
     except Exception as e:
         logger.error(f"Error setting up Telegram session: {str(e)}")
         return False
@@ -201,6 +234,7 @@ async def collect_messages():
                 logger.warning("ACTION REQUIRED: Please visit the setup page to create a new session")
 
             return
+
     except Exception as e:
         logger.error(f"Fatal collector error: {str(e)}")
     finally:

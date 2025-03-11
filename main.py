@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import atexit
 import os
 import json
+import asyncio
 
 @app.route('/')
 def index():
@@ -111,16 +112,32 @@ def setup_process():
         data = request.get_json()
         phone = data.get('phone')
 
+        if not phone:
+            return jsonify({
+                "status": "error",
+                "message": "Phone number is required"
+            }), 400
+
         # Store phone number temporarily for session creation
         os.environ['TELEGRAM_PHONE'] = phone
 
-        # Start the Telegram session setup
-        setup_telegram_session()
+        # Start the Telegram session setup asynchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(setup_telegram_session())
+        loop.close()
 
-        return jsonify({
-            "status": "code_sent",
-            "message": "Verification code sent to your Telegram app"
-        })
+        if result:
+            return jsonify({
+                "status": "code_sent",
+                "message": "Verification code sent to your Telegram app"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to send verification code"
+            }), 500
+
     except Exception as e:
         logger.error(f"Setup process failed: {str(e)}")
         return jsonify({
