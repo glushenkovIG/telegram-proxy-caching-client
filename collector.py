@@ -31,17 +31,26 @@ async def collect_messages():
 
         # Use existing session without requiring API credentials
         try:
-            # Initialize client with dummy values when reusing session
+            # Get API credentials from environment variables
+            api_id = int(os.environ.get('TELEGRAM_API_ID', 1))
+            api_hash = os.environ.get('TELEGRAM_API_HASH', 'dummy')
+
+            # Initialize client with proper credentials
             client = TelegramClient(
                 session_path,
-                api_id=1,  # Dummy value, not used with existing session
-                api_hash='dummy',  # Dummy value, not used with existing session
+                api_id=api_id,
+                api_hash=api_hash,
                 system_version="4.16.30-vxCUSTOM"
             )
             await client.connect()
 
             if not await client.is_user_authorized():
                 logger.error("Session unauthorized. Please run setup first")
+                # If in production environment, delete the invalid session
+                if os.environ.get('REPLIT_DEPLOYMENT', False):
+                    logger.info("Deployment environment detected, removing invalid session file")
+                    if os.path.exists(session_path):
+                        os.remove(session_path)
                 return
 
             logger.info("Successfully connected using existing session")
@@ -108,7 +117,7 @@ async def collect_messages():
                                             message_batch.append(message.id)
                                         except Exception as e:
                                             logger.error(f"Error preparing message: {str(e)}")
-                                
+
                                 # Commit all messages for this dialog at once
                                 if message_batch:
                                     try:
