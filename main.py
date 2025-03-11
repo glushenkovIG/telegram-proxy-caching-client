@@ -77,6 +77,47 @@ def index():
                           all_count=all_count,
                           ton_count=ton_count,
                           last_3_days_count=last_3_days_count,
+
+@app.route('/setup')
+def setup():
+    """Setup page for creating a new Telegram session"""
+    session_path = 'ton_collector_session.session'
+    session_exists = os.path.exists(session_path)
+    is_deployment = os.environ.get('REPLIT_DEPLOYMENT', False)
+    
+    return render_template('setup.html', 
+                          session_exists=session_exists,
+                          is_deployment=is_deployment)
+
+@app.route('/setup_process', methods=['POST'])
+def setup_process():
+    """Process the setup form and create a new session"""
+    # This route will be implemented with AJAX in the frontend
+    # to handle the interactive authentication
+    return jsonify({"status": "pending"})
+
+@app.route('/restart_collector', methods=['POST'])
+def restart_collector():
+    """Restart the collector thread"""
+    try:
+        # Kill existing collector thread if running
+        from collector import collector_thread
+        
+        # Start a new collector thread
+        with app.app_context():
+            start_collector()
+            
+        return jsonify({"success": True, "message": "Collector restarted successfully"})
+    except Exception as e:
+        logger.error(f"Failed to restart collector: {str(e)}")
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+@app.route('/setup_complete')
+def setup_complete():
+    """Setup completion page"""
+    return render_template('setup_complete.html')
+
+
                           last_7_days_count=last_7_days_count,
                           channel_activity=channel_activity,
                           last_7_days_activity=last_7_days_activity,

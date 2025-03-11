@@ -147,12 +147,19 @@ async def collect_messages():
         except Exception as e:
             logger.error(f"Error connecting with existing session: {str(e)}")
             
-            # Handle "The authorization key was used under two different IP addresses" error
-            if "authorization key" in str(e) and "IP addresses" in str(e):
-                logger.warning("Session invalidated due to IP change - removing session file")
+            # Handle Telegram session errors for deployment
+            if any(x in str(e).lower() for x in ["authorization key", "ip addresses", "connection", "session"]):
+                logger.warning("Session invalidated or connection issue - removing session file")
                 if os.path.exists(session_path):
                     os.remove(session_path)
                     logger.info(f"Removed invalid session file: {session_path}")
+                
+                # Clear any cached connection data
+                try:
+                    import telethon.sessions
+                    telethon.sessions.SQLiteSession.delete(session_path)
+                except Exception as sess_e:
+                    logger.warning(f"Could not clean session with Telethon: {str(sess_e)}")
                 
                 # Notify about required action
                 logger.warning("ACTION REQUIRED: Please visit the setup page to create a new session")
