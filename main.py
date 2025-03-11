@@ -9,6 +9,10 @@ import os
 
 @app.route('/')
 def index():
+    # Check if session is valid
+    session_path = 'ton_collector_session.session'
+    session_valid = os.path.exists(session_path)
+    
     # Fetch data for Telegram Cache Proxy dashboard
     messages = []
     all_count = 0
@@ -76,7 +80,8 @@ def index():
                           last_7_days_count=last_7_days_count,
                           channel_activity=channel_activity,
                           last_7_days_activity=last_7_days_activity,
-                          channels=channels)
+                          channels=channels,
+                          session_valid=session_valid)
 
 @app.route('/status')
 def status():

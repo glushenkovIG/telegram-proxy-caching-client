@@ -24,6 +24,11 @@ async def collect_messages():
         from app import app  # Import app here to use with app_context
         session_path = 'ton_collector_session.session'
 
+        # Check if deployment environment
+        is_deployment = os.environ.get('REPLIT_DEPLOYMENT', False)
+        if is_deployment and os.path.exists(session_path):
+            logger.info("Deployment environment detected, checking session validity")
+            
         # Check if session exists
         if not os.path.exists(session_path):
             logger.error("Session file not found. Please run setup first")
@@ -141,6 +146,17 @@ async def collect_messages():
 
         except Exception as e:
             logger.error(f"Error connecting with existing session: {str(e)}")
+            
+            # Handle "The authorization key was used under two different IP addresses" error
+            if "authorization key" in str(e) and "IP addresses" in str(e):
+                logger.warning("Session invalidated due to IP change - removing session file")
+                if os.path.exists(session_path):
+                    os.remove(session_path)
+                    logger.info(f"Removed invalid session file: {session_path}")
+                
+                # Notify about required action
+                logger.warning("ACTION REQUIRED: Please visit the setup page to create a new session")
+                
             return
 
     except Exception as e:

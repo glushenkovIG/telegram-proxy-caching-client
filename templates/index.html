@@ -8,6 +8,13 @@
     </div>
   </div>
 
+    {% if not session_valid %}
+    <div class="alert alert-warning" role="alert">
+      <strong>Telegram session is invalid or missing!</strong> Please <a href="/setup" class="alert-link">set up a new session</a> to continue collecting messages.
+    </div>
+    {% endif %}
+
+
   <!-- Statistics Section -->
   <div class="row mb-4">
     <div class="col-md-6">
