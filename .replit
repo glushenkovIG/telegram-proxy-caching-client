@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "gunicorn -w 2 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level info"]
 
 [workflows]
-runButton = "Web Server"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -79,7 +79,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "gunicorn -w 2 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level info"
 waitForPort = 5000
 
 [[ports]]

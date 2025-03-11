@@ -20,16 +20,20 @@ db = SQLAlchemy(model_class=Base)
 # Create Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
+
+# configure the database, relative to the app instance folder
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False # Added from original
+
+# initialize the app with the extension, flask-sqlalchemy >= 3.0.x
 db.init_app(app)
 
 with app.app_context():
-    # Import models here to avoid circular imports
-    from models import TelegramMessage  # noqa
-    # Create database tables
+    # Make sure to import the models here or their tables won't be created
+    import models  # noqa: F401
+
     db.create_all()
