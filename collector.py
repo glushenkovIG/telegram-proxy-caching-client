@@ -21,20 +21,19 @@ async def collect_messages():
     """Main collection function"""
     client = None
     try:
-        from app import app  # Import app here to use with app_context
-        session_path = 'ton_collector_session.session'
+        # Use Replit's persistent storage for session
+        session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
 
         # Check if deployment environment
         is_deployment = os.environ.get('REPLIT_DEPLOYMENT', False)
         if is_deployment and os.path.exists(session_path):
             logger.info("Deployment environment detected, checking session validity")
-            
-        # Check if session exists
-        if not os.path.exists(session_path):
-            logger.error("Session file not found. Please run setup first")
+
+        # Check if session exists and is not empty
+        if not os.path.exists(session_path) or os.path.getsize(session_path) == 0:
+            logger.error("Session file not found or empty. Please run setup first")
             return
 
-        # Use existing session without requiring API credentials
         try:
             # Get API credentials from environment variables
             api_id = int(os.environ.get('TELEGRAM_API_ID', 1))
@@ -84,7 +83,7 @@ async def collect_messages():
                             logger.info(f"Latest message date from Telethon: {getattr(dialog.message, 'date', 'Unknown')}")
 
                             # Get latest messages - use app's context manager
-                            with app.app_context():
+                            with current_app.app_context():
                                 # Get latest stored message ID
                                 latest_msg = TelegramMessage.query.filter_by(
                                     channel_id=channel_id
@@ -97,8 +96,6 @@ async def collect_messages():
                                 # Process new messages with smaller batch size
                                 message_batch = []
                                 async for message in client.iter_messages(dialog, limit=20):
-                                    logger.debug(f"Found message {message.id} from {channel_title} with date {message.date}")
-
                                     if message.id <= latest_id and latest_id != 0:
                                         logger.debug(f"Skipping message {message.id} - already processed")
                                         continue  # Skip processed messages
@@ -146,24 +143,24 @@ async def collect_messages():
 
         except Exception as e:
             logger.error(f"Error connecting with existing session: {str(e)}")
-            
+
             # Handle Telegram session errors for deployment
             if any(x in str(e).lower() for x in ["authorization key", "ip addresses", "connection", "session"]):
                 logger.warning("Session invalidated or connection issue - removing session file")
                 if os.path.exists(session_path):
                     os.remove(session_path)
                     logger.info(f"Removed invalid session file: {session_path}")
-                
+
                 # Clear any cached connection data
                 try:
                     import telethon.sessions
                     telethon.sessions.SQLiteSession.delete(session_path)
                 except Exception as sess_e:
                     logger.warning(f"Could not clean session with Telethon: {str(sess_e)}")
-                
+
                 # Notify about required action
                 logger.warning("ACTION REQUIRED: Please visit the setup page to create a new session")
-                
+
             return
 
     except Exception as e:
@@ -172,21 +169,6 @@ async def collect_messages():
         if client:
             await client.disconnect()
             logger.info("Disconnected Telegram client")
-
-async def collector_loop():
-    """Main collector loop with backoff"""
-    consecutive_errors = 0
-    while True:
-        try:
-            logger.info("Starting collection cycle")
-            await collect_messages()
-            consecutive_errors = 0
-        except Exception as e:
-            consecutive_errors += 1
-            retry_wait = min(5 * 2 ** consecutive_errors, 300)
-            logger.error(f"Error in collector loop (attempt {consecutive_errors}): {str(e)}")
-            logger.info(f"Retrying in {retry_wait} seconds...")
-            await asyncio.sleep(retry_wait)
 
 def start_collector_thread():
     """Collector thread starter"""
@@ -207,3 +189,18 @@ def ensure_single_collector():
     collector_thread = threading.Thread(target=start_collector_thread, daemon=True)
     collector_thread.start()
     logger.info("Collector thread started successfully")
+
+async def collector_loop():
+    """Main collector loop with backoff"""
+    consecutive_errors = 0
+    while True:
+        try:
+            logger.info("Starting collection cycle")
+            await collect_messages()
+            consecutive_errors = 0
+        except Exception as e:
+            consecutive_errors += 1
+            retry_wait = min(5 * 2 ** consecutive_errors, 300)
+            logger.error(f"Error in collector loop (attempt {consecutive_errors}): {str(e)}")
+            logger.info(f"Retrying in {retry_wait} seconds...")
+            await asyncio.sleep(retry_wait)

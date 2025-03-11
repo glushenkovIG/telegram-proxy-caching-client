@@ -8,9 +8,9 @@ import os
 
 @app.route('/')
 def index():
-    # Check if session is valid
-    session_path = 'ton_collector_session.session'
-    session_valid = os.path.exists(session_path)
+    # Check if session is valid - use Replit's persistent storage path
+    session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+    session_valid = os.path.exists(session_path) and os.path.getsize(session_path) > 0
 
     # Fetch data for Telegram Cache Proxy dashboard
     messages = []
