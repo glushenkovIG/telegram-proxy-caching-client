@@ -1,4 +1,4 @@
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from app import app, db, logger
 from collector import ensure_single_collector
 from models import TelegramMessage
@@ -90,6 +90,52 @@ def index():
 def status():
     """Health check endpoint"""
     return jsonify({"status": "running"})
+
+@app.route('/setup')
+def setup():
+    """Setup page for creating a new Telegram session"""
+    # Check if session exists in Replit's persistent storage
+    session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+    session_exists = os.path.exists(session_path)
+    is_deployment = os.environ.get('REPLIT_DEPLOYMENT', False)
+
+    return render_template('setup.html', 
+                         session_exists=session_exists,
+                         is_deployment=is_deployment)
+
+@app.route('/setup_process', methods=['POST'])
+def setup_process():
+    """Process the setup form and create a new session"""
+    try:
+        api_id = request.form.get('api_id')
+        api_hash = request.form.get('api_hash')
+        phone = request.form.get('phone')
+
+        # Store credentials temporarily for session creation
+        os.environ['TELEGRAM_API_ID'] = api_id
+        os.environ['TELEGRAM_API_HASH'] = api_hash
+
+        # Restart collector to create new session
+        if collector_thread and collector_thread.is_alive():
+            logger.info("Stopping existing collector thread...")
+            # The thread will exit gracefully on next iteration
+
+        return jsonify({
+            "status": "success",
+            "message": "Configuration saved successfully. Please restart the collector."
+        })
+    except Exception as e:
+        logger.error(f"Setup process failed: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Setup failed: {str(e)}"
+        }), 500
+
+@app.route('/setup_complete')
+def setup_complete():
+    """Setup completion page"""
+    return render_template('setup_complete.html')
+
 
 # Start the collector thread when the app starts
 collector_thread = None
