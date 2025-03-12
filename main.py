@@ -7,6 +7,7 @@ import atexit
 import os
 import json
 import asyncio
+import sys
 
 @app.route('/')
 def index():
@@ -179,6 +180,26 @@ def setup_complete():
     """Setup completion page"""
     return render_template('setup_complete.html')
 
+@app.route('/restart_collector', methods=['POST'])
+def restart_collector():
+    """Restart the collector thread"""
+    try:
+        # Check if session exists in Replit's persistent storage
+        session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+        
+        # If the session is invalid, try to remove it
+        if os.path.exists(session_path):
+            logger.info(f"Removing existing session file: {session_path}")
+            os.remove(session_path)
+            
+        # Restart the collector
+        start_collector()
+        
+        return jsonify({"success": True, "message": "Collector restarted successfully"})
+    except Exception as e:
+        logger.error(f"Failed to restart collector: {str(e)}")
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
 
 # Start the collector thread when the app starts
 collector_thread = None
@@ -187,14 +208,25 @@ def start_collector():
     """Initialize and start the collector thread"""
     global collector_thread
     try:
+        # Stop existing collector if running
+        if collector_thread and collector_thread.is_alive():
+            logger.info("Stopping existing collector thread...")
+            # The thread will exit gracefully on next iteration
+        
+        # Reload the collector module to refresh state
+        import importlib
+        importlib.reload(sys.modules['collector'])
+        
+        # Start new collector thread
         ensure_single_collector()
         from collector import collector_thread as ct
         collector_thread = ct
         logger.info("Collector thread started successfully")
+        return True
     except Exception as e:
         logger.error(f"Failed to start collector: {str(e)}")
         # Don't let collector failure prevent web server from starting
-        pass
+        return False
 
 # Register cleanup function
 def cleanup():
