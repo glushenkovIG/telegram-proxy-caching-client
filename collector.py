@@ -25,9 +25,9 @@ async def setup_telegram_session():
         logger.info(f"Setting up Telegram session at: {session_path}")
 
         # Get credentials from environment
-        api_id = int(os.environ.get('TELEGRAM_API_ID'))
-        api_hash = os.environ.get('TELEGRAM_API_HASH')
-        phone = os.environ.get('TELEGRAM_PHONE')
+        api_id = int(os.environ.get('TELEGRAM_API_ID', 0))
+        api_hash = os.environ.get('TELEGRAM_API_HASH', '')
+        phone = os.environ.get('TELEGRAM_PHONE', '')
 
         logger.info(f"Got phone number: {phone}")
         logger.debug(f"Using API ID: {api_id}")
@@ -39,51 +39,69 @@ async def setup_telegram_session():
             logger.error(f"Phone present: {bool(phone)}")
             return False
 
-        logger.info("Creating TelegramClient with provided credentials")
-        # Initialize client
-        client = TelegramClient(
-            session_path,
-            api_id=api_id,
-            api_hash=api_hash,
-            system_version="4.16.30-vxCUSTOM"
-        )
+        # Remove existing session if it exists
+        if os.path.exists(session_path):
+            try:
+                os.remove(session_path)
+                logger.info(f"Removed existing session file for clean start")
+            except Exception as e:
+                logger.warning(f"Could not remove existing session: {str(e)}")
 
-        await client.connect()
-        logger.info("Connected to Telegram servers")
+        logger.info("Creating TelegramClient with provided credentials")
+        # Initialize client with proper error handling
+        try:
+            client = TelegramClient(
+                session_path,
+                api_id=api_id,
+                api_hash=api_hash,
+                system_version="4.16.30-vxCUSTOM",
+                device_model="Replit Deployment",
+                app_version="1.0"
+            )
+        except Exception as e:
+            logger.error(f"Failed to create TelegramClient: {str(e)}")
+            return False
+
+        # Connect with timeout handling
+        try:
+            await asyncio.wait_for(client.connect(), timeout=30)
+            logger.info("Connected to Telegram servers")
+        except asyncio.TimeoutError:
+            logger.error("Timeout connecting to Telegram servers")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to connect to Telegram: {str(e)}")
+            return False
 
         if not await client.is_user_authorized():
             try:
                 logger.info(f"Sending code request to: {phone}")
-                # Send code request
-                await client.send_code_request(phone)
-                logger.info("Verification code sent successfully")
+                # Send code request with proper formatting
+                # Make sure the phone is in international format (with +)
+                if not phone.startswith('+'):
+                    phone = '+' + phone
+                
+                # Send the code request
+                code_sent = await client.send_code_request(phone)
+                logger.info(f"Verification code sent successfully: {code_sent}")
+                
+                # Store the phone hash if available
+                if hasattr(code_sent, 'phone_code_hash'):
+                    os.environ['TELEGRAM_PHONE_HASH'] = code_sent.phone_code_hash
+                    logger.info("Stored phone code hash for verification")
 
-                # Wait for code to be entered
-                code = os.environ.get('TELEGRAM_CODE')
-                if code:
-                    logger.info("Signing in with provided code")
-                    await client.sign_in(phone, code)
-                    logger.info("Successfully authenticated with Telegram")
-                else:
-                    logger.error("No verification code provided in environment")
-                    return False
+                # At this point, we return True to indicate the code was sent
+                # The actual sign-in will happen in the verify_code endpoint
+                return True
+                
             except Exception as e:
-                logger.error(f"Error during authentication: {str(e)}")
-                if "phone" in str(e).lower():
-                    logger.error("Phone number format or validation error")
-                elif "code" in str(e).lower():
-                    logger.error("Invalid verification code")
+                logger.error(f"Error during code request: {str(e)}")
+                await client.disconnect()
                 return False
-
-        await client.disconnect()
-
-        # Verify session file was created
-        if os.path.exists(session_path) and os.path.getsize(session_path) > 0:
-            logger.info(f"Session file created successfully at {session_path}")
-            return True
         else:
-            logger.error("Session file was not created successfully")
-            return False
+            logger.info("Already authorized, no need for verification code")
+            await client.disconnect()
+            return True
 
     except Exception as e:
         logger.error(f"Error setting up Telegram session: {str(e)}")

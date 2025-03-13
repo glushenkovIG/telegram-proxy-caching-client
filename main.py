@@ -178,16 +178,85 @@ def verify_code():
 
         # Store verification code temporarily
         os.environ['TELEGRAM_CODE'] = code
+        
+        # Get credentials from environment
+        api_id = int(os.environ.get('TELEGRAM_API_ID', 0))
+        api_hash = os.environ.get('TELEGRAM_API_HASH', '')
+        phone = os.environ.get('TELEGRAM_PHONE', '')
+        
+        if not all([api_id, api_hash, phone]):
+            return jsonify({"status": "error", "message": "Missing API credentials"}), 400
 
-        # Restart collector to create new session
-        if collector_thread and collector_thread.is_alive():
-            logger.info("Stopping existing collector thread...")
-            # The thread will exit gracefully on next iteration
-
-        return jsonify({
-            "status": "success",
-            "message": "Authentication successful"
-        })
+        # Create an async function to handle the verification
+        async def complete_verification():
+            session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+            
+            # Initialize client
+            client = TelegramClient(
+                session_path,
+                api_id=api_id,
+                api_hash=api_hash,
+                system_version="4.16.30-vxCUSTOM",
+                device_model="Replit Deployment",
+                app_version="1.0"
+            )
+            
+            try:
+                await client.connect()
+                
+                # Ensure we're not already signed in
+                if not await client.is_user_authorized():
+                    # Make sure phone has + prefix
+                    if not phone.startswith('+'):
+                        formatted_phone = '+' + phone
+                    else:
+                        formatted_phone = phone
+                        
+                    # Sign in with the verification code
+                    await client.sign_in(formatted_phone, code)
+                    
+                    # Check if we're now authorized
+                    if await client.is_user_authorized():
+                        logger.info("Successfully authenticated with Telegram")
+                        await client.disconnect()
+                        return True
+                    else:
+                        logger.error("Failed to authorize after sign-in attempt")
+                        await client.disconnect()
+                        return False
+                else:
+                    logger.info("Already authorized with Telegram")
+                    await client.disconnect()
+                    return True
+                    
+            except Exception as e:
+                logger.error(f"Error in verification process: {str(e)}")
+                try:
+                    await client.disconnect()
+                except:
+                    pass
+                return False
+        
+        # Run the async verification function
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success = loop.run_until_complete(complete_verification())
+        loop.close()
+        
+        if success:
+            # If verification was successful, restart the collector
+            start_collector()
+            
+            return jsonify({
+                "status": "success",
+                "message": "Authentication successful"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to verify code with Telegram"
+            }), 500
+            
     except Exception as e:
         logger.error(f"Code verification failed: {str(e)}")
         return jsonify({
@@ -204,18 +273,47 @@ def setup_complete():
 def restart_collector():
     """Restart the collector thread"""
     try:
+        global collector_thread
+        
         # Check if session exists in Replit's persistent storage
         session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
         
-        # If the session is invalid, try to remove it
-        if os.path.exists(session_path):
+        # Get session validity flag from request
+        data = request.get_json() or {}
+        remove_session = data.get('remove_session', True)
+        
+        # If requested or the session is invalid, try to remove it
+        if remove_session and os.path.exists(session_path):
             logger.info(f"Removing existing session file: {session_path}")
-            os.remove(session_path)
+            try:
+                os.remove(session_path)
+                logger.info("Session file removed successfully")
+            except Exception as e:
+                logger.warning(f"Could not remove session file: {str(e)}")
+        
+        # Stop the current collector thread if it's running
+        if collector_thread and collector_thread.is_alive():
+            logger.info("Stopping existing collector thread...")
+            # Wait for a moment to let the thread exit
+            import time
+            time.sleep(2)
+        
+        # Important: Reload the collector module to refresh state
+        import importlib
+        import sys
+        if 'collector' in sys.modules:
+            importlib.reload(sys.modules['collector'])
+            
+        # Clear the global reference
+        collector_thread = None
             
         # Restart the collector
-        start_collector()
+        success = start_collector()
         
-        return jsonify({"success": True, "message": "Collector restarted successfully"})
+        if success:
+            return jsonify({"success": True, "message": "Collector restarted successfully"})
+        else:
+            return jsonify({"success": False, "message": "Failed to start collector thread"}), 500
     except Exception as e:
         logger.error(f"Failed to restart collector: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
@@ -232,19 +330,41 @@ def start_collector():
         if collector_thread and collector_thread.is_alive():
             logger.info("Stopping existing collector thread...")
             # The thread will exit gracefully on next iteration
+            import time
+            time.sleep(1)  # Give a brief moment for thread to clean up
+        
+        # Check if session exists and is valid
+        session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+        session_valid = os.path.exists(session_path) and os.path.getsize(session_path) > 0
+        
+        if not session_valid:
+            logger.warning("No valid session found. Collector will start but may not collect messages until setup is complete.")
         
         # Reload the collector module to refresh state
         import importlib
-        importlib.reload(sys.modules['collector'])
+        import sys
+        if 'collector' in sys.modules:
+            importlib.reload(sys.modules['collector'])
         
         # Start new collector thread
+        from collector import ensure_single_collector
         ensure_single_collector()
+        
+        # Get the updated thread reference
         from collector import collector_thread as ct
         collector_thread = ct
-        logger.info("Collector thread started successfully")
-        return True
+        
+        # Verify the thread was created and is running
+        if collector_thread and collector_thread.is_alive():
+            logger.info("Collector thread started successfully")
+            return True
+        else:
+            logger.error("Collector thread was not started properly")
+            return False
     except Exception as e:
         logger.error(f"Failed to start collector: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         # Don't let collector failure prevent web server from starting
         return False
 

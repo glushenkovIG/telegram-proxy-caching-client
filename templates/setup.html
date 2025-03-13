@@ -47,11 +47,26 @@
         .instructions ol {
             padding-left: 20px;
         }
+        .alert {
+          margin-bottom: 1rem;
+          padding: 1rem;
+        }
+        .alert-danger {
+          color: #721c24;
+          background-color: #f8d7da;
+          border-color: #f5c6cb;
+        }
+        .alert-info {
+          color: #0c5460;
+          background-color: #d1ecf1;
+          border-color: #bee5eb;
+        }
+
     </style>
 </head>
 <body>
     <h1>Telegram API Setup</h1>
-    
+
     <div class="instructions">
         <h2>Instructions:</h2>
         <ol>
@@ -60,23 +75,23 @@
             <li>Enter the credentials below</li>
         </ol>
     </div>
-    
+
     <form method="post">
         <div class="form-group">
             <label for="api_id">API ID:</label>
             <input type="text" id="api_id" name="api_id" required>
         </div>
-        
+
         <div class="form-group">
             <label for="api_hash">API Hash:</label>
             <input type="text" id="api_hash" name="api_hash" required>
         </div>
-        
+
         <div class="form-group">
             <label for="phone">Phone Number (with country code):</label>
             <input type="text" id="phone" name="phone" required placeholder="+12025550123">
         </div>
-        
+
         <button type="submit">Save Configuration</button>
     </form>
 </body>
@@ -95,16 +110,16 @@
           <form id="setupForm" class="mt-4">
             <div class="mb-3">
               <label for="phoneNumber" class="form-label">Phone Number</label>
-              <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" value="+41762636496" readonly>
-              <small class="form-text text-muted">Your Telegram account phone number</small>
+              <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" value="+41762636496" >
+              <small class="form-text text-muted">Your Telegram account phone number (with country code)</small>
             </div>
             <div class="d-grid">
-              <button type="submit" class="btn btn-primary">Start Authentication</button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">Start Authentication</button>
             </div>
           </form>
 
           <div id="authProgress" class="mt-4 d-none">
-            <div class="alert alert-info">
+            <div class="alert alert-info" role="alert">
               <p id="statusMessage">Connecting to Telegram...</p>
               <div class="progress">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%"></div>
@@ -120,6 +135,7 @@
                 <button id="submitCode" class="btn btn-success">Submit Code</button>
               </div>
             </div>
+            <div id="errorText" class="mt-3 alert d-none"></div>
           </div>
         </div>
       </div>
@@ -132,68 +148,168 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const setupForm = document.getElementById('setupForm');
-  const authProgress = document.getElementById('authProgress');
-  const statusMessage = document.getElementById('statusMessage');
-  const codeInputContainer = document.getElementById('codeInputContainer');
-  const submitCodeBtn = document.getElementById('submitCode');
+    document.addEventListener('DOMContentLoaded', function() {
+      // Form submission handler
+      const setupForm = document.getElementById('setupForm');
+      const phoneInput = document.getElementById('phoneNumber');
+      const submitBtn = document.getElementById('submitBtn');
+      const verificationSection = document.getElementById('codeInputContainer');
+      const codeInput = document.getElementById('verificationCode');
+      const submitCodeBtn = document.getElementById('submitCode');
+      const errorText = document.getElementById('errorText');
+      const setupSection = document.getElementById('authProgress');
 
-  setupForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
+      // Phone number validation and formatting
+      phoneInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length > 0 && !value.startsWith('+')) {
+          value = '+' + value;
+        }
+        if (value !== this.value) {
+          this.value = value;
+        }
+      });
 
-    // Show progress
-    setupForm.classList.add('d-none');
-    authProgress.classList.remove('d-none');
+      setupForm.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    try {
-      const response = await fetch('/setup_process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: document.getElementById('phoneNumber').value
+        // Validate phone number
+        const phone = phoneInput.value.trim();
+        if (!phone || phone.length < 5) {
+          showError("Please enter a valid phone number with country code (e.g., +12345678901).");
+          return;
+        }
+
+        // Disable the button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+        hideError();
+
+        // Send request to backend
+        fetch('/setup_process', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ phone: phone })
         })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.message || `HTTP error ${response.status}`);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.status === 'code_sent') {
+            // Show verification code input
+            verificationSection.classList.remove('d-none');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Resend Code';
+
+            // Focus the code input
+            setTimeout(() => {
+              codeInput.focus();
+            }, 100);
+
+            // Show success message
+            showMessage("Verification code sent! Check your Telegram app and enter the code below.");
+          } else {
+            // Show error
+            showError(data.message || "Failed to send verification code.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Start Authentication';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showError(error.message || "An error occurred. Please try again.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Start Authentication';
+        });
       });
 
-      const data = await response.json();
-      if (data.status === 'code_sent') {
-        statusMessage.textContent = 'Verification code sent to your Telegram app';
-        codeInputContainer.classList.remove('d-none');
-      } else {
-        throw new Error(data.message || 'Failed to start authentication');
-      }
-    } catch (error) {
-      statusMessage.textContent = `Error: ${error.message}`;
-      statusMessage.classList.add('text-danger');
-    }
-  });
+      // Verification code submission
+      submitCodeBtn.addEventListener('click', function() {
+        const code = codeInput.value.trim();
+        if (!code || code.length < 3) {
+          showError("Please enter the verification code correctly.");
+          return;
+        }
 
-  submitCodeBtn.addEventListener('click', async function() {
-    const code = document.getElementById('verificationCode').value;
-    if (!code) return;
+        // Disable the button and show loading state
+        submitCodeBtn.disabled = true;
+        submitCodeBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
+        hideError();
 
-    try {
-      const response = await fetch('/verify_code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code })
+        // Send verification code to backend
+        fetch('/verify_code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ code: code })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.message || `HTTP error ${response.status}`);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.status === 'success') {
+            // Show temporary success message before redirect
+            setupSection.innerHTML = `
+              <div class="alert alert-success">
+                <h4>Success!</h4>
+                <p>Telegram authentication successful. Redirecting to setup complete page...</p>
+                <div class="spinner-border text-success" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            `;
+
+            // Redirect to complete page after a brief delay
+            setTimeout(() => {
+              window.location.href = '/setup_complete';
+            }, 1500);
+          } else {
+            // Show error
+            showError(data.message || "Failed to verify code.");
+            submitCodeBtn.disabled = false;
+            submitCodeBtn.textContent = 'Submit Code';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showError(error.message || "An error occurred. Please try again.");
+          submitCodeBtn.disabled = false;
+          submitCodeBtn.textContent = 'Submit Code';
+        });
       });
 
-      const data = await response.json();
-      if (data.status === 'success') {
-        window.location.href = '/setup_complete';
-      } else {
-        throw new Error(data.message || 'Invalid code');
+      // Helper functions
+      function showError(message) {
+        errorText.textContent = message;
+        errorText.classList.remove('d-none', 'alert-info');
+        errorText.classList.add('alert-danger');
       }
-    } catch (error) {
-      statusMessage.textContent = `Error: ${error.message}`;
-      statusMessage.classList.add('text-danger');
-    }
-  });
-});
-</script>
+
+      function showMessage(message) {
+        errorText.textContent = message;
+        errorText.classList.remove('d-none', 'alert-danger');
+        errorText.classList.add('alert-info');
+      }
+
+      function hideError() {
+        errorText.classList.add('d-none');
+      }
+
+      // Auto-focus the phone input on page load
+      phoneInput.focus();
+    });
+  </script>
 {% endblock %}
