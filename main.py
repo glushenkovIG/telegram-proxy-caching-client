@@ -92,7 +92,27 @@ def index():
 @app.route('/status')
 def status():
     """Health check endpoint"""
-    return jsonify({"status": "running"})
+    global collector_thread
+    
+    # Check if session exists in Replit's persistent storage
+    session_path = os.path.join(os.environ.get('REPL_HOME', ''), 'ton_collector_session.session')
+    session_exists = os.path.exists(session_path) and os.path.getsize(session_path) > 0
+    
+    # Check if collector thread is running
+    thread_running = collector_thread is not None and collector_thread.is_alive()
+    
+    if session_exists and thread_running:
+        return jsonify({"status": "running", "collector": "active", "session": "valid"})
+    elif not session_exists:
+        # Try to restart collector
+        start_collector()
+        return jsonify({"status": "warning", "collector": "restarted", "session": "invalid"})
+    elif not thread_running:
+        # Try to restart collector
+        start_collector()
+        return jsonify({"status": "warning", "collector": "restarted", "thread": "dead"})
+    
+    return jsonify({"status": "error", "message": "Unknown state"})
 
 @app.route('/setup')
 def setup():
