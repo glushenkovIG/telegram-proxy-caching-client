@@ -5,7 +5,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "gunicorn -w 2 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level info"]
+run = ["sh", "-c", "gunicorn -w 2 -b 0.0.0.0:5000 main:app --timeout 180 --keep-alive 5 --log-level debug"]
 
 [workflows]
 runButton = "Project"
