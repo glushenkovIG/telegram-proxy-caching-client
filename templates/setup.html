@@ -1,20 +1,28 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Setup</title>
+    <title>Telegram API Setup</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
-        h1 {
-            color: #1a73e8;
+        .step {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            display: none;
+        }
+        .step.active {
+            display: block;
         }
         .form-group {
             margin-bottom: 15px;
@@ -29,160 +37,214 @@
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            margin-bottom: 10px;
         }
         button {
             background-color: #1a73e8;
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
         }
-        .instructions {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
-        .instructions ol {
-            padding-left: 20px;
+        .progress {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .progress-step {
+            flex: 1;
+            padding: 8px;
+            background: #eee;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .progress-step.active {
+            background: #1a73e8;
+            color: white;
+        }
+        .progress-step.done {
+            background: #4CAF50;
+            color: white;
         }
         .alert {
-          margin-bottom: 1rem;
-          padding: 1rem;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
         }
-        .alert-danger {
-          color: #721c24;
-          background-color: #f8d7da;
-          border-color: #f5c6cb;
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
         }
-        .alert-info {
-          color: #0c5460;
-          background-color: #d1ecf1;
-          border-color: #bee5eb;
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
         }
-        .verification-section { margin-top: 20px; display: none; }
-        .verification-section.show { display: block; }
-
+        #statusMessage {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
     <h1>Telegram API Setup</h1>
-
-    <div class="instructions">
-        <h2>Instructions:</h2>
-        <ol>
-            <li>Go to <a href="https://my.telegram.org/apps" target="_blank">https://my.telegram.org/apps</a></li>
-            <li>Create a new application to get your API ID and Hash</li>
-            <li>Enter the credentials below</li>
-        </ol>
+    
+    <div class="progress">
+        <div class="progress-step active" id="step1-indicator">API Credentials</div>
+        <div class="progress-step" id="step2-indicator">Phone Number</div>
+        <div class="progress-step" id="step3-indicator">Verification</div>
     </div>
 
-    <form id="setupForm">
+    <div id="step1" class="step active">
+        <h2>Step 1: Enter API Credentials</h2>
+        <p>Visit <a href="https://my.telegram.org/apps" target="_blank">https://my.telegram.org/apps</a> to create your application and get the credentials.</p>
+        
         <div class="form-group">
             <label for="api_id">API ID:</label>
-            <input type="text" id="api_id" name="api_id" required>
+            <input type="text" id="api_id" required>
         </div>
 
         <div class="form-group">
             <label for="api_hash">API Hash:</label>
-            <input type="text" id="api_hash" name="api_hash" required>
+            <input type="text" id="api_hash" required>
         </div>
 
+        <button onclick="nextStep(1)">Continue</button>
+    </div>
+
+    <div id="step2" class="step">
+        <h2>Step 2: Phone Number</h2>
         <div class="form-group">
             <label for="phone">Phone Number (with country code):</label>
-            <input type="text" id="phone" name="phone" required placeholder="+12025550123">
+            <input type="text" id="phone" placeholder="+12025550123" required>
         </div>
 
-        <button type="submit">Send Verification Code</button>
-    </form>
+        <button onclick="requestCode()">Send Code</button>
+        <button onclick="prevStep(2)" style="background-color: #666;">Back</button>
+    </div>
 
-    <div id="verificationSection" class="verification-section">
-        <h3>Enter Verification Code</h3>
-        <form id="verifyForm">
-            <div class="form-group">
-                <label for="code">Verification Code:</label>
-                <input type="text" id="code" name="code" required>
-            </div>
-            <button type="submit">Verify Code</button>
-            <div id="errorText" class="mt-3 alert d-none"></div>
+    <div id="step3" class="step">
+        <h2>Step 3: Verification Code</h2>
+        <div class="form-group">
+            <label for="code">Enter the code sent to your Telegram app:</label>
+            <input type="text" id="code" required>
         </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const setupForm = document.getElementById('setupForm');
-                const verifyForm = document.getElementById('verifyForm');
-                const errorText = document.getElementById('errorText');
+        <button onclick="verifyCode()">Verify</button>
+        <button onclick="prevStep(3)" style="background-color: #666;">Back</button>
+    </div>
 
-                setupForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const phone = document.getElementById('phone').value;
-                    const api_id = document.getElementById('api_id').value;
-                    const api_hash = document.getElementById('api_hash').value;
+    <div id="statusMessage"></div>
 
-                    if (!phone || phone.length < 5) {
-                        showError("Please enter a valid phone number with country code (e.g., +12345678901).");
-                        return;
-                    }
+    <script>
+        let currentStep = 1;
+        const credentials = {};
 
-                    try {
-                        const response = await fetch('/setup_process', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ phone, api_id, api_hash })
-                        });
-                        const data = await response.json();
-                        if (data.status === 'code_sent') {
-                            document.getElementById('verificationSection').classList.add('show');
-                            showMessage("Verification code sent! Check your Telegram app and enter the code below.");
-                        } else {
-                            showError(data.message || "Failed to send verification code.");
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        showError(error.message || "An error occurred. Please try again.");
-                    }
-                });
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.textContent = message;
+        }
 
-                verifyForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const code = document.getElementById('code').value;
-                    if (!code || code.length < 3) {
-                        showError("Please enter the verification code correctly.");
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch('/verify_code', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ code })
-                        });
-                        const data = await response.json();
-                        if (data.status === 'success') {
-                            window.location.href = '/setup_complete';
-                        } else {
-                            showError(data.message || "Failed to verify code.");
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        showError(error.message || "An error occurred. Please try again.");
-                    }
-                });
-
-                function showError(message) {
-                    errorText.textContent = message;
-                    errorText.classList.remove('d-none', 'alert-info');
-                    errorText.classList.add('alert-danger');
+        function nextStep(step) {
+            if (step === 1) {
+                const apiId = document.getElementById('api_id').value;
+                const apiHash = document.getElementById('api_hash').value;
+                
+                if (!apiId || !apiHash) {
+                    showStatus('Please fill in all credentials', 'error');
+                    return;
                 }
+                
+                credentials.api_id = apiId;
+                credentials.api_hash = apiHash;
+            }
+            
+            document.querySelector(`.step.active`).classList.remove('active');
+            document.getElementById(`step${step + 1}`).classList.add('active');
+            
+            document.querySelector(`#step${step}-indicator`).classList.remove('active');
+            document.querySelector(`#step${step}-indicator`).classList.add('done');
+            document.querySelector(`#step${step + 1}-indicator`).classList.add('active');
+            
+            currentStep = step + 1;
+        }
 
-                function showMessage(message) {
-                    errorText.textContent = message;
-                    errorText.classList.remove('d-none', 'alert-danger');
-                    errorText.classList.add('alert-info');
+        function prevStep(step) {
+            document.querySelector(`.step.active`).classList.remove('active');
+            document.getElementById(`step${step - 1}`).classList.add('active');
+            
+            document.querySelector(`#step${step}-indicator`).classList.remove('active');
+            document.querySelector(`#step${step - 1}-indicator`).classList.remove('done');
+            document.querySelector(`#step${step - 1}-indicator`).classList.add('active');
+            
+            currentStep = step - 1;
+        }
+
+        async function requestCode() {
+            const phone = document.getElementById('phone').value;
+            if (!phone) {
+                showStatus('Please enter your phone number', 'error');
+                return;
+            }
+
+            credentials.phone = phone;
+            
+            try {
+                const response = await fetch('/setup_process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentials)
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'code_sent') {
+                    showStatus('Verification code sent to your Telegram app');
+                    nextStep(2);
+                } else {
+                    showStatus(data.message || 'Failed to send verification code', 'error');
                 }
+            } catch (error) {
+                showStatus('Error sending verification code', 'error');
+            }
+        }
 
-            });
-        </script>
+        async function verifyCode() {
+            const code = document.getElementById('code').value;
+            if (!code) {
+                showStatus('Please enter the verification code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/verify_code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showStatus('Successfully authenticated!');
+                    document.querySelector('#step3-indicator').classList.remove('active');
+                    document.querySelector('#step3-indicator').classList.add('done');
+                    setTimeout(() => window.location.href = '/', 2000);
+                } else {
+                    showStatus(data.message || 'Verification failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Error during verification', 'error');
+            }
+        }
+    </script>
 </body>
 </html>
