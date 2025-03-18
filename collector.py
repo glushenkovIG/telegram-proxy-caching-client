@@ -332,9 +332,13 @@ async def collector_loop():
             consecutive_errors = 0
         except Exception as e:
             consecutive_errors += 1
-            retry_wait = min(5 * 2**consecutive_errors, 300)
+            retry_wait = min(30 * 2**consecutive_errors, 600)  # Longer backoff
             logger.error(
                 f"Error in collector loop (attempt {consecutive_errors}): {str(e)}"
             )
-            logger.info(f"Retrying in {retry_wait} seconds...")
-            await asyncio.sleep(retry_wait)
+            if "unauthorized" in str(e).lower():
+                logger.error("Session is not authorized. Please visit /setup to authenticate.")
+                await asyncio.sleep(60)  # Wait longer for unauthorized errors
+            else:
+                logger.info(f"Retrying in {retry_wait} seconds...")
+                await asyncio.sleep(retry_wait)
