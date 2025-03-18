@@ -231,12 +231,7 @@ def verify_code():
                                         'ton_collector_session.session')
 
             # Initialize client
-            client = TelegramClient(session_path,
-                                    api_id=api_id,
-                                    api_hash=api_hash,
-                                    system_version="4.16.30-vxCUSTOM",
-                                    device_model="Replit Deployment",
-                                    app_version="1.0")
+            client = TelegramClient("Test", api_id=api_id, api_hash=api_hash)
 
             try:
                 await client.connect()
