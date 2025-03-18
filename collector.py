@@ -139,8 +139,8 @@ async def collect_messages():
             # Get API credentials from environment variables
             api_id = int(os.environ.get('TELEGRAM_API_ID'))
             api_hash = os.environ.get('TELEGRAM_API_HASH')
-            
-            if not api_id or not api_hash:
+
+            if not api_id or not api_hash or not session_path:
                 logger.error("Missing API credentials")
                 return False
 
