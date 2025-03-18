@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 import atexit
@@ -83,6 +83,10 @@ db = SQLAlchemy(model_class=Base)
 
 # Create Flask app
 app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return redirect('https://ton-chats-cashing-proxy-ivanglushenkov.replit.app')
 app.secret_key = os.environ.get("SESSION_SECRET")
 
 # configure the database, relative to the app instance folder
