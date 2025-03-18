@@ -133,7 +133,16 @@ async def collect_messages():
                 session_path) == 0:
             logger.error(
                 "Session file not found or empty. Please run setup first")
+            if os.path.exists(session_path):
+                os.remove(session_path)
+                logger.info("Removed invalid session file")
             return False
+
+        # Validate session file permissions
+        try:
+            os.chmod(session_path, 0o600)
+        except Exception as e:
+            logger.warning(f"Could not set session file permissions: {e}")
 
         try:
             # Get API credentials from environment variables
