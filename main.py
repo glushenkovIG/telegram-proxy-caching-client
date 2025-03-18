@@ -198,7 +198,7 @@ def setup_process():
         }), 500
 
 
-@app.route('/verify_code', methods=['POST'])
+@app.route('/verify_code', methods=['POST', 'GET'])
 def verify_code():
     """Verify the Telegram authentication code"""
     try:
