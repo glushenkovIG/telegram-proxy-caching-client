@@ -19,6 +19,10 @@ author = "agent"
 task = "workflow.run"
 args = "Web Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask Server"
+
 [[workflows.workflow]]
 name = "Run App"
 author = 36288906
@@ -69,6 +73,21 @@ args = "python main.py"
 
 [[workflows.workflow]]
 name = "Web Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gunicorn -w 2 -b 0.0.0.0:5000 main:app --timeout 120 --keep-alive 5 --log-level info"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Flask Server"
 author = "agent"
 
 [workflows.workflow.metadata]

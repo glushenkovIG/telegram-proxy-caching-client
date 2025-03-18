@@ -8,17 +8,16 @@ import os
 import json
 import asyncio
 import sys
+from telethon import TelegramClient  # Add this import
 
 
 @app.route('/')
 def index():
-    # Check if session is valid - use Replit's persistent storage path
     session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                 'ton_collector_session.session')
     session_valid = os.path.exists(session_path) and os.path.getsize(
         session_path) > 0
 
-    # Fetch data for Telegram Cache Proxy dashboard
     messages = []
     all_count = 0
     ton_count = 0
@@ -29,24 +28,15 @@ def index():
     last_7_days_activity = []
 
     try:
-        # Get total message count
         all_count = db.session.query(TelegramMessage).count()
-
-        # Get TON dev message count
         ton_count = db.session.query(TelegramMessage).filter_by(
             is_ton_dev=True).count()
-
-        # Get last 3 days statistics
         three_days_ago = datetime.utcnow() - timedelta(days=3)
         last_3_days_count = db.session.query(TelegramMessage).filter(
             TelegramMessage.timestamp >= three_days_ago).count()
-
-        # Get last 7 days statistics
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         last_7_days_count = db.session.query(TelegramMessage).filter(
             TelegramMessage.timestamp >= seven_days_ago).count()
-
-        # Get message leaderboard by incoming and outgoing messages (overall)
         channel_activity = db.session.query(
             TelegramMessage.channel_title,
             db.func.count(TelegramMessage.id).filter(
@@ -56,8 +46,6 @@ def index():
             db.func.count(TelegramMessage.id).label('total')).group_by(
                 TelegramMessage.channel_title).order_by(
                     db.desc('total')).limit(10).all()
-
-        # Get last 7 days activity leaderboard
         last_7_days_activity = db.session.query(
             TelegramMessage.channel_title,
             db.func.count(TelegramMessage.id).filter(
@@ -68,8 +56,6 @@ def index():
                 TelegramMessage.timestamp >= seven_days_ago).group_by(
                     TelegramMessage.channel_title).order_by(
                         db.desc('total')).limit(10).all()
-
-        # Get channel statistics
         channels = db.session.query(
             TelegramMessage.channel_title,
             db.func.count(TelegramMessage.id).label('count'),
@@ -77,11 +63,8 @@ def index():
                 TelegramMessage.is_ton_dev).label('is_ton_dev')).group_by(
                     TelegramMessage.channel_title).order_by(
                         db.desc('count')).all()
-
-        # Get the 100 most recent messages
         messages = db.session.query(TelegramMessage).order_by(
             TelegramMessage.timestamp.desc()).limit(100).all()
-
         logger.info(
             f"Loaded {len(messages)} messages and {len(channels)} channels for display"
         )
@@ -105,13 +88,11 @@ def status():
     """Health check endpoint"""
     global collector_thread
 
-    # Check if session exists in Replit's persistent storage
     session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                 'ton_collector_session.session')
     session_exists = os.path.exists(session_path) and os.path.getsize(
         session_path) > 0
 
-    # Check if collector thread is running
     thread_running = collector_thread is not None and collector_thread.is_alive(
     )
 
@@ -122,7 +103,6 @@ def status():
             "session": "valid"
         })
     elif not session_exists:
-        # Try to restart collector
         start_collector()
         return jsonify({
             "status": "warning",
@@ -130,7 +110,6 @@ def status():
             "session": "invalid"
         })
     elif not thread_running:
-        # Try to restart collector
         start_collector()
         return jsonify({
             "status": "warning",
@@ -144,7 +123,6 @@ def status():
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
     """Setup page for creating a new Telegram session"""
-    # Check if session exists in Replit's persistent storage
     session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                 'ton_collector_session.session')
     session_exists = os.path.exists(session_path)
@@ -168,10 +146,8 @@ def setup_process():
                 "message": "Phone number is required"
             }), 400
 
-        # Store phone number temporarily for session creation
         os.environ['TELEGRAM_PHONE'] = phone
 
-        # Start the Telegram session setup asynchronously
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         result = loop.run_until_complete(setup_telegram_session())
@@ -211,55 +187,57 @@ def verify_code():
                 "message": "No verification code provided"
             }), 400
 
-        # Store verification code temporarily
         os.environ['TELEGRAM_CODE'] = code
 
-        # Get credentials from environment
-        api_id = int(os.environ.get('TELEGRAM_API_ID', 0))
-        api_hash = os.environ.get('TELEGRAM_API_HASH', '')
-        phone = os.environ.get('TELEGRAM_PHONE', '')
+        try:
+            api_id = int(os.environ.get('TELEGRAM_API_ID'))
+            api_hash = os.environ.get('TELEGRAM_API_HASH')
+            phone = os.environ.get('TELEGRAM_PHONE')
 
-        if not all([api_id, api_hash, phone]):
+            if not all([api_id, api_hash, phone]):
+                return jsonify({
+                    "status": "error",
+                    "message": "Missing API credentials"
+                }), 400
+        except (TypeError, ValueError) as e:
+            logger.error(f"Invalid API credentials: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": "Missing API credentials"
+                "message": "Invalid API credentials format"
             }), 400
 
-        # Create an async function to handle the verification
         async def complete_verification():
-            session_path = os.path.join(os.environ.get('REPL_HOME', ''),
-                                        'ton_collector_session.session')
+            session_path = os.path.join(os.environ.get('REPL_HOME', os.getcwd()),
+                                      'ton_collector_session.session')
 
-            # Initialize client
             client = TelegramClient(session_path,
-                                    api_id=api_id,
-                                    api_hash=api_hash,
-                                    system_version="4.16.30-vxCUSTOM",
-                                    device_model="Replit Deployment",
-                                    app_version="1.0")
+                                  api_id=api_id,
+                                  api_hash=api_hash,
+                                  system_version="4.16.30-vxCUSTOM",
+                                  device_model="Replit Deployment",
+                                  app_version="1.0")
 
             try:
                 await client.connect()
 
-                # Ensure we're not already signed in
                 if not await client.is_user_authorized():
-                    # Make sure phone has + prefix
                     if not phone.startswith('+'):
                         formatted_phone = '+' + phone
                     else:
                         formatted_phone = phone
 
-                    # Sign in with the verification code
-                    await client.sign_in(formatted_phone, code)
+                    try:
+                        await client.sign_in(formatted_phone, code)
+                    except Exception as e:
+                        logger.error(f"Sign in error: {str(e)}")
+                        return False
 
-                    # Check if we're now authorized
                     if await client.is_user_authorized():
                         logger.info("Successfully authenticated with Telegram")
                         await client.disconnect()
                         return True
                     else:
-                        logger.error(
-                            "Failed to authorize after sign-in attempt")
+                        logger.error("Failed to authorize after sign-in attempt")
                         await client.disconnect()
                         return False
                 else:
@@ -275,16 +253,13 @@ def verify_code():
                     pass
                 return False
 
-        # Run the async verification function
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         success = loop.run_until_complete(complete_verification())
         loop.close()
 
         if success:
-            # If verification was successful, restart the collector
             start_collector()
-
             return jsonify({
                 "status": "success",
                 "message": "Authentication successful"
@@ -315,15 +290,12 @@ def restart_collector():
     try:
         global collector_thread
 
-        # Check if session exists in Replit's persistent storage
         session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                     'ton_collector_session.session')
 
-        # Get session validity flag from request
         data = request.get_json() or {}
         remove_session = data.get('remove_session', True)
 
-        # If requested or the session is invalid, try to remove it
         if remove_session and os.path.exists(session_path):
             logger.info(f"Removing existing session file: {session_path}")
             try:
@@ -332,23 +304,18 @@ def restart_collector():
             except Exception as e:
                 logger.warning(f"Could not remove session file: {str(e)}")
 
-        # Stop the current collector thread if it's running
         if collector_thread and collector_thread.is_alive():
             logger.info("Stopping existing collector thread...")
-            # Wait for a moment to let the thread exit
             import time
             time.sleep(2)
 
-        # Important: Reload the collector module to refresh state
         import importlib
         import sys
         if 'collector' in sys.modules:
             importlib.reload(sys.modules['collector'])
 
-        # Clear the global reference
         collector_thread = None
 
-        # Restart the collector
         success = start_collector()
 
         if success:
@@ -366,7 +333,6 @@ def restart_collector():
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 
-# Start the collector thread when the app starts
 collector_thread = None
 
 
@@ -375,14 +341,11 @@ def start_collector():
     global collector_thread
     logger.info("Starting collector thread...")
     try:
-        # Stop existing collector if running
         if collector_thread and collector_thread.is_alive():
             logger.info("Stopping existing collector thread...")
-            # The thread will exit gracefully on next iteration
             import time
-            time.sleep(1)  # Give a brief moment for thread to clean up
+            time.sleep(1)
 
-        # Check if session exists and is valid
         session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                     'ton_collector_session.session')
         session_valid = os.path.exists(session_path) and os.path.getsize(
@@ -393,21 +356,17 @@ def start_collector():
                 "No valid session found. Collector will start but may not collect messages until setup is complete."
             )
 
-        # Reload the collector module to refresh state
         import importlib
         import sys
         if 'collector' in sys.modules:
             importlib.reload(sys.modules['collector'])
 
-        # Start new collector thread
         from collector import ensure_single_collector
         ensure_single_collector()
 
-        # Get the updated thread reference
         from collector import collector_thread as ct
         collector_thread = ct
 
-        # Verify the thread was created and is running
         if collector_thread and collector_thread.is_alive():
             logger.info("Collector thread started successfully")
             return True
@@ -418,11 +377,9 @@ def start_collector():
         logger.error(f"Failed to start collector: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
-        # Don't let collector failure prevent web server from starting
         return False
 
 
-# Register cleanup function
 def cleanup():
     """Cleanup function to be called on shutdown"""
     if collector_thread and collector_thread.is_alive():
@@ -431,18 +388,14 @@ def cleanup():
 
 if __name__ == "__main__":
     try:
-        # Initialize database first
         with app.app_context():
             db.create_all()
 
-        # Start collector with app context
         with app.app_context():
             start_collector()
 
-        # Register cleanup
         atexit.register(cleanup)
 
-        # Start Flask server
         port = int(os.environ.get("PORT", 5000))
         logger.info(f"Starting Flask server on port {port}")
         app.run(host="0.0.0.0", port=port, debug=True)
