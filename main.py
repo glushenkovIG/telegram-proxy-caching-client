@@ -141,7 +141,7 @@ def status():
     return jsonify({"status": "error", "message": "Unknown state"})
 
 
-@app.route('/setup')
+@app.route('/setup', methods=['GET', 'POST'])
 def setup():
     """Setup page for creating a new Telegram session"""
     # Check if session exists in Replit's persistent storage
