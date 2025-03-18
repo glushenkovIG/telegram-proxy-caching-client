@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta
 from telethon import TelegramClient
 from flask import current_app
-
+import sys
 from app import db
 from models import TelegramMessage
 from utils import should_be_ton_dev, get_proper_dialog_type
@@ -37,8 +37,12 @@ async def setup_telegram_session():
         if not all([api_id, api_hash, phone]):
             logger.error("Missing required credentials:")
             logger.error(f"API ID present: {bool(api_id)} (got: {api_id})")
-            logger.error(f"API Hash present: {bool(api_hash)} (got: {'[hidden]' if api_hash else 'None'})")
-            logger.error(f"Phone present: {bool(phone)} (got: {phone if phone else 'None'})")
+            logger.error(
+                f"API Hash present: {bool(api_hash)} (got: {'[hidden]' if api_hash else 'None'})"
+            )
+            logger.error(
+                f"Phone present: {bool(phone)} (got: {phone if phone else 'None'})"
+            )
             return False
 
         # Remove existing session if it exists
@@ -134,7 +138,8 @@ async def collect_messages():
         try:
             # Get API credentials from environment variables
             api_id = int(os.environ.get('TELEGRAM_API_ID', '26162406'))
-            api_hash = os.environ.get('TELEGRAM_API_HASH', '7a005c82feee57d782a7e2f8399ddaf6')
+            api_hash = os.environ.get('TELEGRAM_API_HASH',
+                                      '7a005c82feee57d782a7e2f8399ddaf6')
 
             # Initialize client with proper credentials
             client = TelegramClient(session_path,
@@ -260,6 +265,10 @@ async def collect_messages():
                     await asyncio.sleep(60)
 
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error(e)
+            logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
             logger.error(f"Error connecting with existing session: {str(e)}")
 
             # Handle Telegram session errors for deployment
@@ -342,7 +351,9 @@ async def collector_loop():
                 f"Error in collector loop (attempt {consecutive_errors}): {str(e)}"
             )
             if "unauthorized" in str(e).lower():
-                logger.error("Session is not authorized. Please visit /setup to authenticate.")
+                logger.error(
+                    "Session is not authorized. Please visit /setup to authenticate."
+                )
                 await asyncio.sleep(60)  # Wait longer for unauthorized errors
             else:
                 logger.info(f"Retrying in {retry_wait} seconds...")
