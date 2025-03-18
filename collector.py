@@ -56,12 +56,7 @@ async def setup_telegram_session():
         logger.info("Creating TelegramClient with provided credentials")
         # Initialize client with proper error handling
         try:
-            client = TelegramClient(session_path,
-                                    api_id=api_id,
-                                    api_hash=api_hash,
-                                    system_version="4.16.30-vxCUSTOM",
-                                    device_model="Replit Deployment",
-                                    app_version="1.0")
+            client = TelegramClient("Test", api_id=api_id, api_hash=api_hash)
         except Exception as e:
             logger.error(f"Failed to create TelegramClient: {str(e)}")
             return False
@@ -154,10 +149,7 @@ async def collect_messages():
                 return False
 
             # Initialize client with proper credentials
-            client = TelegramClient(session_path,
-                                    api_id=api_id,
-                                    api_hash=api_hash,
-                                    system_version="4.16.30-vxCUSTOM")
+            client = TelegramClient("test", api_id=api_id, api_hash=api_hash)
             await client.connect()
 
             if not await client.is_user_authorized():
