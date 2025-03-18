@@ -133,8 +133,8 @@ async def collect_messages():
 
         try:
             # Get API credentials from environment variables
-            api_id = int(os.environ.get('TELEGRAM_API_ID', 1))
-            api_hash = os.environ.get('TELEGRAM_API_HASH', 'dummy')
+            api_id = int(os.environ.get('TELEGRAM_API_ID', '26162406'))
+            api_hash = os.environ.get('TELEGRAM_API_HASH', '7a005c82feee57d782a7e2f8399ddaf6')
 
             # Initialize client with proper credentials
             client = TelegramClient(session_path,
