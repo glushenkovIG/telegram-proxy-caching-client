@@ -84,9 +84,6 @@ db = SQLAlchemy(model_class=Base)
 # Create Flask app
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return redirect('https://ton-chats-cashing-proxy-ivanglushenkov.replit.app')
 app.secret_key = os.environ.get("SESSION_SECRET")
 
 # configure the database, relative to the app instance folder
