@@ -1,6 +1,7 @@
 from flask import render_template, jsonify, request
 from app import app, db, logger
 from collector import ensure_single_collector, setup_telegram_session
+from telethon import TelegramClient
 from models import TelegramMessage
 from datetime import datetime, timedelta
 import atexit
@@ -230,8 +231,8 @@ def verify_code():
             session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                         'ton_collector_session.session')
 
-            # Initialize client
-            client = TelegramClient("Test", api_id=api_id, api_hash=api_hash)
+            # Initialize client with proper session name
+            client = TelegramClient("ton_collector_session", api_id=api_id, api_hash=api_hash)
 
             try:
                 await client.connect()
