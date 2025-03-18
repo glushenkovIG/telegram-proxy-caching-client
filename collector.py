@@ -36,9 +36,9 @@ async def setup_telegram_session():
 
         if not all([api_id, api_hash, phone]):
             logger.error("Missing required credentials:")
-            logger.error(f"API ID present: {bool(api_id)}")
-            logger.error(f"API Hash present: {bool(api_hash)}")
-            logger.error(f"Phone present: {bool(phone)}")
+            logger.error(f"API ID present: {bool(api_id)} (got: {api_id})")
+            logger.error(f"API Hash present: {bool(api_hash)} (got: {'[hidden]' if api_hash else 'None'})")
+            logger.error(f"Phone present: {bool(phone)} (got: {phone if phone else 'None'})")
             return False
 
         # Remove existing session if it exists
