@@ -99,6 +99,10 @@ async def setup_telegram_session():
 
             except Exception as e:
                 logger.error(f"Error during code request: {str(e)}")
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                logger.error(e)
+                logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
                 await client.disconnect()
                 return False
         else:
@@ -151,7 +155,7 @@ async def collect_messages():
                 return False
 
             # Initialize client with proper credentials
-            client = TelegramClient("ton_collector_session",
+            client = TelegramClient("ton_collector_session.session",
                                     api_id=api_id,
                                     api_hash=api_hash)
             await client.connect()
