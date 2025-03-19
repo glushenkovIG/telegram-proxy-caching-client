@@ -123,7 +123,7 @@ async def collect_messages():
         # Ensure we're running in app context
         with app.app_context():
             # Use Replit's persistent storage for session
-        session_path = os.path.join(os.environ.get('REPL_HOME', ''),
+            session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                     'ton_collector_session.session')
 
         # Check if deployment environment
