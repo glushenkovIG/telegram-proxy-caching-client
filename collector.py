@@ -120,8 +120,8 @@ async def collect_messages():
     from app import app
     client = None
     try:
-        # Ensure we're running in app context
-        with app.app_context():
+        # Get app reference but don't enter context yet
+        from app import app
             # Use Replit's persistent storage for session
             session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                     'ton_collector_session.session')
@@ -202,8 +202,8 @@ async def collect_messages():
                                 f"Latest message date from Telethon: {getattr(dialog.message, 'date', 'Unknown')}"
                             )
 
-                            # Get latest messages - use app's context manager
-                            with current_app.app_context():
+                            # Get latest messages with proper app context
+                            with app.app_context():
                                 # Get latest stored message ID
                                 latest_msg = TelegramMessage.query.filter_by(
                                     channel_id=channel_id).order_by(
@@ -353,10 +353,12 @@ def ensure_single_collector():
 
 async def collector_loop():
     """Main collector loop with backoff"""
+    from app import app
     consecutive_errors = 0
     while True:  # Continuous collection loop
         try:
             logger.info("Starting collection cycle")
+            with app.app_context():
             result = await collect_messages()
             if result is False:  # If collection failed due to auth
                 logger.info("Collection stopped due to authentication issue")
