@@ -117,9 +117,12 @@ async def setup_telegram_session():
 
 async def collect_messages():
     """Main collection function"""
+    from app import app
     client = None
     try:
-        # Use Replit's persistent storage for session
+        # Ensure we're running in app context
+        with app.app_context():
+            # Use Replit's persistent storage for session
         session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                     'ton_collector_session.session')
 
@@ -174,12 +177,12 @@ async def collect_messages():
             logger.info("Successfully connected using existing session")
 
             while True:  # Continuous collection loop
-                try:
-                    # Get all dialogs
-                    dialogs = await client.get_dialogs(limit=200)
-                    logger.info(f"Found {len(dialogs)} dialogs")
+                    try:
+                        # Get all dialogs
+                        dialogs = await client.get_dialogs(limit=200)
+                        logger.info(f"Found {len(dialogs)} dialogs")
 
-                    # Process each dialog
+                        # Process each dialog
                     for dialog in dialogs:
                         try:
                             if not hasattr(dialog, 'id'):
