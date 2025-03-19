@@ -1,0 +1,39 @@
+8:41 +0000] [4312] [INFO] Handling signal: winch
+[2025-03-19 22:28:41 +0000] [4312] [INFO] Handling signal: winch
+[2025-03-19 22:28:41 +0000] [4312] [INFO] Handling signal: winch
+[2025-03-19 22:28:41 +0000] [4312] [INFO] Handling signal: winch
+[2025-03-19 22:28:41 +0000] [4312] [INFO] Handling signal: winch
+[2025-03-19 22:28:41 +0000] [4312] [INFO] Handling signal: winch
+[2025-03-19 22:28:41 +0000] [4312] [INFO] Handling signal: winch
+2025-03-19 22:28:41,773 - app - INFO - Starting collector thread...
+2025-03-19 22:28:41,775 - app - ERROR - Failed to start collector: expected 'except' or 'finally' block (collector.py, line 186)
+2025-03-19 22:28:41,776 - app - ERROR - Traceback (most recent call last):
+  File "/home/runner/workspace/app.py", line 41, in start_collector
+    from collector import ensure_single_collector
+  File "/home/runner/workspace/collector.py", line 186
+    for dialog in dialogs:
+    ^^^
+SyntaxError: expected 'except' or 'finally' block
+
+[2025-03-19 22:28:41 +0000] [4323] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/arbiter.py", line 608, in spawn_worker
+    worker.init_process()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/workers/base.py", line 135, in init_process
+    self.load_wsgi()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/workers/base.py", line 147, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/gunicorn/util.py", line 370, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/clx0mcir7qw8zk36zbr4jra789g3knf6-python3-3.11.10/lib/python3.11/importli
