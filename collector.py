@@ -56,7 +56,7 @@ async def setup_telegram_session():
         logger.info("Creating TelegramClient with provided credentials")
         # Initialize client with proper error handling
         try:
-            client = TelegramClient("ton_collector_session",
+            client = TelegramClient(session_path,
                                     api_id=api_id,
                                     api_hash=api_hash)
         except Exception as e:
@@ -155,7 +155,7 @@ async def collect_messages():
                 return False
 
             # Initialize client with proper credentials
-            client = TelegramClient("ton_collector_session.session",
+            client = TelegramClient(session_path,
                                     api_id=api_id,
                                     api_hash=api_hash)
             await client.connect()

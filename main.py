@@ -228,14 +228,25 @@ def verify_code():
 
         # Create an async function to handle the verification
         async def complete_verification():
-            session_path = os.path.join(os.environ.get('REPL_HOME', ''),
-                                        'ton_collector_session.session')
-
-            # Initialize client with proper session name
-            client = TelegramClient("ton_collector_session", api_id=api_id, api_hash=api_hash)
-
             try:
+                session_path = os.path.join(os.environ.get('REPL_HOME', ''),
+                                            'ton_collector_session.session')
+                # Initialize client with proper session name
+                client = TelegramClient(session_path,
+                                        api_id=api_id,
+                                        api_hash=api_hash)
+                if not client.is_user_authorized():
+                    await client.send_code_request(phone)
+
                 await client.connect()
+                phone_code_hash = (
+                    await client.send_code_request(phone)).phone_code_hash
+                logger.info(phone_code_hash)
+                logger.info(code)
+                logger.info("WTF")
+                logger.info(phone)
+                logger.info(api_id)
+                logger.info(api_hash)
 
                 # Ensure we're not already signed in
                 if not await client.is_user_authorized():
@@ -244,9 +255,17 @@ def verify_code():
                         formatted_phone = '+' + phone
                     else:
                         formatted_phone = phone
-
                     # Sign in with the verification code
-                    await client.sign_in(formatted_phone, code)
+                    try:
+                        await client.sign_in(formatted_phone, code)
+                    except Exception as e:
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        logger.error(e)
+                        logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
+                        logger.error(f"Session failed WTFF: {str(e)}")
+                        
+                        await client.sign_in(formatted_phone, password="pmfkjkszpj1")
 
                     # Check if we're now authorized
                     if await client.is_user_authorized():
@@ -264,7 +283,11 @@ def verify_code():
                     return True
 
             except Exception as e:
-                logger.error(f"Error in verification process: {str(e)}")
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                logger.error(e)
+                logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
+                logger.error(f"Session failed: {str(e)}")
                 try:
                     await client.disconnect()
                 except:
@@ -292,6 +315,10 @@ def verify_code():
             }), 500
 
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        logger.error(e)
+        logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
         logger.error(f"Code verification failed: {str(e)}")
         return jsonify({
             "status": "error",
