@@ -117,10 +117,13 @@ async def setup_telegram_session():
 
 async def collect_messages():
     """Main collection function"""
+    from app import app
     client = None
     try:
-        # Use Replit's persistent storage for session
-        session_path = os.path.join(os.environ.get('REPL_HOME', ''),
+        # Ensure we're running in app context
+        with app.app_context():
+            # Use Replit's persistent storage for session
+            session_path = os.path.join(os.environ.get('REPL_HOME', ''),
                                     'ton_collector_session.session')
 
         # Check if deployment environment
@@ -262,10 +265,6 @@ async def collect_messages():
                                         db.session.rollback()
 
                         except Exception as e:
-                            exc_type, exc_obj, exc_tb = sys.exc_info()
-                            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                            logger.error(e)
-                            logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
                             logger.error(
                                 f"Error processing dialog {getattr(dialog, 'title', 'Unknown')}: {str(e)}"
                             )
