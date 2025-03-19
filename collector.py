@@ -177,12 +177,12 @@ async def collect_messages():
             logger.info("Successfully connected using existing session")
 
             while True:  # Continuous collection loop
-                    try:
-                        # Get all dialogs
-                        dialogs = await client.get_dialogs(limit=200)
-                        logger.info(f"Found {len(dialogs)} dialogs")
+                try:
+                    # Get all dialogs
+                    dialogs = await client.get_dialogs(limit=200)
+                    logger.info(f"Found {len(dialogs)} dialogs")
 
-                        # Process each dialog
+                    # Process each dialog
                     for dialog in dialogs:
                         try:
                             if not hasattr(dialog, 'id'):
@@ -265,6 +265,10 @@ async def collect_messages():
                                         db.session.rollback()
 
                         except Exception as e:
+                            exc_type, exc_obj, exc_tb = sys.exc_info()
+                            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                            logger.error(e)
+                            logger.error("File: %s Lineno: %s", fname, exc_tb.tb_lineno)
                             logger.error(
                                 f"Error processing dialog {getattr(dialog, 'title', 'Unknown')}: {str(e)}"
                             )
