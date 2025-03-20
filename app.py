@@ -94,8 +94,8 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_size": 5,
     "max_overflow": 10,
     "connect_args": {
-        "timeout": 30,
-        "check_same_thread": False
+        "connect_timeout": 30,
+        "options": "-c statement_timeout=30000"
     }
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # Added from original
