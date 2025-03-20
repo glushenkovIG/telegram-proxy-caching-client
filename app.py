@@ -91,6 +91,12 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
+    "pool_size": 5,
+    "max_overflow": 10,
+    "connect_args": {
+        "timeout": 30,
+        "check_same_thread": False
+    }
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # Added from original
 

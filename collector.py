@@ -255,16 +255,21 @@ async def collect_messages():
 
                                 # Commit all messages for this dialog at once
                                 if message_batch:
-                                    try:
-                                        db.session.commit()
-                                        logger.info(
-                                            f"Saved {len(message_batch)} new messages from {channel_title}"
-                                        )
-                                    except Exception as e:
-                                        logger.error(
-                                            f"Error saving messages batch: {str(e)}"
-                                        )
-                                        db.session.rollback()
+                                    for retry in range(3):
+                                        try:
+                                            db.session.commit()
+                                            logger.info(
+                                                f"Saved {len(message_batch)} new messages from {channel_title}"
+                                            )
+                                            break
+                                        except Exception as e:
+                                            logger.error(
+                                                f"Error saving messages batch (attempt {retry + 1}): {str(e)}"
+                                            )
+                                            db.session.rollback()
+                                            if retry < 2:  # Don't sleep on last attempt
+                                                import time
+                                                time.sleep(1 * (retry + 1))  # Progressive backoff
 
                         except Exception as e:
                             exc_type, exc_obj, exc_tb = sys.exc_info()
